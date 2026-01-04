@@ -14,11 +14,12 @@ COPY . .
 RUN bun run build
 
 # Run the application
-FROM base AS release
+FROM node:20-slim AS release
+WORKDIR /usr/src/app
 COPY --from=build /usr/src/app .
 
 # Set environment variables for production
 ENV NODE_ENV=production
 
 EXPOSE 3000
-CMD [ "bun", "run", "start" ]
+CMD [ "npm", "run", "start" ]
