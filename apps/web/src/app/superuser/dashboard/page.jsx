@@ -356,6 +356,33 @@ export default function SuperUserDashboard() {
     );
   }
 
+  const translateDetail = (key, value) => {
+    const labels = {
+      fullName: "Nombre",
+      email: "Email",
+      role: "Rol",
+      mppsNumber: "MPPS",
+      colegioNumber: "Colegio",
+      specialty: "Especialidad",
+      rif: "RIF",
+      parent_doctor_id: "Médico Asignado",
+      isVerified: "Verificado"
+    };
+
+    const roleLabels = {
+      doctor: "Médico",
+      nurse: "Enfermería/Soporte",
+      administrator: "Administrativo",
+      superuser: "SuperUsuario"
+    };
+
+    let displayValue = value;
+    if (key === 'role') displayValue = roleLabels[value] || value;
+    if (key === 'isVerified') displayValue = value ? "Sí" : "No";
+
+    return { label: labels[key] || key, value: String(displayValue) };
+  };
+
   const navItems = [
     { id: "dashboard", icon: BarChart3, label: "Dashboard" },
     { id: "users", icon: Users, label: "Personal Médico" },
@@ -533,8 +560,12 @@ export default function SuperUserDashboard() {
                             {new Date(log.created_at).toLocaleString("es-VE")}
                           </div>
                           {log.details && (
-                            <div className="mt-2 p-2 bg-gray-50 dark:bg-[#262626] rounded text-[10px] font-mono text-[#5C6178] line-clamp-1">
-                              {JSON.stringify(log.details)}
+                            <div className="mt-2 text-[10px] text-[#5C6178] border-l-2 border-indigo-200 pl-2 py-1">
+                              {Object.entries(log.details).map(([key, val], i) => {
+                                const { label } = translateDetail(key, val);
+                                if (!val || val === "") return null;
+                                return <span key={key}>{i > 0 && " • "}{label}</span>;
+                              }).filter(Boolean)}
                             </div>
                           )}
                         </div>
@@ -739,16 +770,20 @@ export default function SuperUserDashboard() {
                         <p className="text-sm text-gray-600">{log.action} en {log.entity_type}</p>
                         {log.details && (
                           <div className="mt-2 p-3 bg-[#F8FAFF] dark:bg-[#262626] border border-[#ECEFF9] dark:border-[#374151] rounded-lg">
-                            <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-1">Detalles del Cambio:</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {Object.entries(log.details).map(([key, value]) => (
-                                <div key={key} className="flex flex-col">
-                                  <span className="text-[9px] text-[#A0A5BA] uppercase">{key}</span>
-                                  <span className="text-xs font-medium text-[#1E2559] dark:text-white truncate" title={String(value)}>
-                                    {String(value)}
-                                  </span>
-                                </div>
-                              ))}
+                            <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-1">Información procesada:</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                              {Object.entries(log.details).map(([key, value]) => {
+                                if (value === null || value === "" || value === undefined) return null;
+                                const { label, value: displayValue } = translateDetail(key, value);
+                                return (
+                                  <div key={key} className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-1">
+                                    <span className="text-[9px] text-[#A0A5BA] uppercase font-semibold">{label}</span>
+                                    <span className="text-xs font-medium text-[#1E2559] dark:text-white truncate max-w-[150px]" title={displayValue}>
+                                      {displayValue}
+                                    </span>
+                                  </div>
+                                );
+                              }).filter(Boolean)}
                             </div>
                           </div>
                         )}
