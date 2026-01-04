@@ -5,9 +5,9 @@ import type {
 	AdapterSession,
 } from '@auth/core/adapters';
 import type { ProviderType } from '@auth/core/providers';
-import type { Pool } from '@neondatabase/serverless';
+import type { Pool } from 'pg';
 
-interface NeonUser extends AdapterUser {
+interface PgUser extends AdapterUser {
 	accounts: {
 		provider: string;
 		provider_account_id: string;
@@ -15,10 +15,10 @@ interface NeonUser extends AdapterUser {
 	}[];
 }
 
-interface NeonAdapter extends Adapter {
+interface PgAdapter extends Adapter {
 	createUser(data: AdapterUser): Promise<AdapterUser>;
 	getUser(userId: string): Promise<AdapterUser | null>;
-	getUserByEmail(email: string): Promise<NeonUser | null>;
+	getUserByEmail(email: string): Promise<PgUser | null>;
 	getUserByAccount(data: {
 		provider: string;
 		providerAccountId: string;
@@ -39,7 +39,7 @@ interface NeonAdapter extends Adapter {
 	}): Promise<void>;
 }
 
-export default function NeonAdapter(client: Pool): NeonAdapter {
+export default function PgAdapter(client: Pool): PgAdapter {
 	return {
 		async createVerificationToken(
 			verificationToken: VerificationToken
