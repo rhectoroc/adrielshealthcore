@@ -383,6 +383,11 @@ export default function SuperUserDashboard() {
     return { label: labels[key] || key, value: String(displayValue) };
   };
 
+  const renderValueText = (key, value) => {
+    const { value: displayValue } = translateDetail(key, value);
+    return displayValue;
+  };
+
   const getParsedDetails = (details) => {
     if (!details) return null;
     if (typeof details === 'object') return details;
@@ -572,12 +577,17 @@ export default function SuperUserDashboard() {
                           </div>
                           {log.details && (
                             <div className="mt-2 text-[10px] text-[#5C6178] border-l-2 border-indigo-200 pl-2 py-1">
-                              {Object.entries(getParsedDetails(log.details) || {}).map(([key, val], i) => {
-                                if (key === 'targetName') return null;
-                                const { label } = translateDetail(key, val);
-                                if (val === null || val === "" || val === undefined) return null;
-                                return <span key={key}>{i > 0 && " • "}{label}</span>;
-                              }).filter(Boolean)}
+                              {(() => {
+                                const parsed = getParsedDetails(log.details) || {};
+                                const source = parsed.changes || parsed;
+                                return Object.entries(source).map(([key, val], i) => {
+                                  if (key === 'targetName') return null;
+                                  const isTransition = typeof val === 'object' && val !== null && 'old' in val;
+                                  const { label } = translateDetail(key, isTransition ? val.new : val);
+                                  if (val === null || val === "" || val === undefined) return null;
+                                  return <span key={key}>{i > 0 && " • "}{label}</span>;
+                                }).filter(Boolean);
+                              })()}
                             </div>
                           )}
                         </div>
@@ -783,20 +793,40 @@ export default function SuperUserDashboard() {
                         {log.details && (
                           <div className="mt-2 p-3 bg-[#F8FAFF] dark:bg-[#262626] border border-[#ECEFF9] dark:border-[#374151] rounded-lg">
                             <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-1">Información procesada:</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                              {Object.entries(getParsedDetails(log.details) || {}).map(([key, value]) => {
-                                if (key === 'targetName') return null;
-                                if (value === null || value === "" || value === undefined) return null;
-                                const { label, value: displayValue } = translateDetail(key, value);
-                                return (
-                                  <div key={key} className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-1">
-                                    <span className="text-[9px] text-[#A0A5BA] uppercase font-semibold">{label}</span>
-                                    <span className="text-xs font-medium text-[#1E2559] dark:text-white truncate max-w-[150px]" title={displayValue}>
-                                      {displayValue}
-                                    </span>
-                                  </div>
-                                );
-                              }).filter(Boolean)}
+                            <div className="grid grid-cols-1 gap-y-2 mt-2">
+                              {(() => {
+                                const parsed = getParsedDetails(log.details) || {};
+                                const isUpdate = !!parsed.changes;
+                                const source = parsed.changes || parsed;
+
+                                return Object.entries(source).map(([key, value]) => {
+                                  if (key === 'targetName') return null;
+                                  const { label } = translateDetail(key, value);
+
+                                  if (isUpdate && typeof value === 'object' && value !== null && 'old' in value) {
+                                    return (
+                                      <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
+                                        <span className="text-[9px] text-[#A0A5BA] uppercase font-semibold">{label}</span>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-[10px] line-through text-gray-400">{renderValueText(key, value.old)}</span>
+                                          <span className="text-gray-300">→</span>
+                                          <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">{renderValueText(key, value.new)}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (value === null || value === "" || value === undefined) return null;
+                                  return (
+                                    <div key={key} className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-1">
+                                      <span className="text-[9px] text-[#A0A5BA] uppercase font-semibold">{label}</span>
+                                      <span className="text-xs font-medium text-[#1E2559] dark:text-white truncate max-w-[150px]">
+                                        {renderValueText(key, value)}
+                                      </span>
+                                    </div>
+                                  );
+                                }).filter(Boolean);
+                              })()}
                             </div>
                           </div>
                         )}

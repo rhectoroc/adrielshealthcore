@@ -26,6 +26,18 @@ export async function PUT(request, { params }) {
     }
 
     const { id } = params;
+
+    // Get old values for comparison
+    const oldUserResult = await sql`
+      SELECT id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified 
+      FROM users WHERE id = ${id} LIMIT 1
+    `;
+    const oldUser = oldUserResult?.[0];
+
+    if (!oldUser) {
+      return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
     const body = await request.json();
     const {
       fullName,
@@ -41,50 +53,38 @@ export async function PUT(request, { params }) {
     const values = [];
     let paramCount = 1;
 
-    if (fullName !== undefined) {
-      setClauses.push(`full_name = $${paramCount}`);
-      values.push(fullName);
-      paramCount++;
-    }
-    if (mppsNumber !== undefined) {
-      setClauses.push(`mpps_number = $${paramCount}`);
-      values.push(mppsNumber);
-      paramCount++;
-    }
-    if (colegioNumber !== undefined) {
-      setClauses.push(`colegio_number = $${paramCount}`);
-      values.push(colegioNumber);
-      paramCount++;
-    }
-    if (specialty !== undefined) {
-      setClauses.push(`specialty = $${paramCount}`);
-      values.push(specialty);
-      paramCount++;
-    }
-    if (rif !== undefined) {
-      setClauses.push(`rif = $${paramCount}`);
-      values.push(rif);
-      paramCount++;
-    }
-    if (isVerified !== undefined) {
-      setClauses.push(`is_verified = $${paramCount}`);
-      values.push(isVerified);
-      paramCount++;
-    }
-    if (role !== undefined) {
-      setClauses.push(`role = $${paramCount}`);
-      values.push(role);
-      paramCount++;
+    // Mapping of body fields to DB columns
+    const fieldMapping = {
+      fullName: 'full_name',
+      mppsNumber: 'mpps_number',
+      colegioNumber: 'colegio_number',
+      specialty: 'specialty',
+      rif: 'rif',
+      isVerified: 'is_verified',
+      role: 'role'
+    };
+
+    const diff = { targetName: oldUser.full_name, changes: {} };
+
+    Object.entries(body).forEach(([key, newVal]) => {
+      const dbCol = fieldMapping[key];
+      if (dbCol && newVal !== undefined && newVal !== oldUser[dbCol]) {
+        diff.changes[key] = {
+          old: oldUser[dbCol],
+          new: newVal
+        };
+
+        setClauses.push(`${dbCol} = $${paramCount}`);
+        values.push(newVal);
+        paramCount++;
+      }
+    });
+
+    if (setClauses.length === 0) {
+      return Response.json({ message: "No se detectaron cambios", user: oldUser });
     }
 
     setClauses.push(`updated_at = NOW()`);
-
-    if (setClauses.length === 1) {
-      return Response.json(
-        { error: "No hay campos para actualizar" },
-        { status: 400 },
-      );
-    }
 
     const updateQuery = `
       UPDATE users 
@@ -95,22 +95,20 @@ export async function PUT(request, { params }) {
 
     values.push(id);
     const result = await sql.unsafe(updateQuery, values);
-    const user = result?.[0] || null;
+    const updatedUser = result?.[0];
 
-    if (!user) {
-      return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
-    }
-
-    // Log the action
+    // Log the action with diff
     const actorResult = await sql`SELECT id FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1`;
     const actorId = actorResult?.[0]?.id || null;
 
     if (actorId) {
       await sql`
         INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-        VALUES (${actorId}, 'UPDATE_USER', 'users', ${user.id}, ${{ ...body, targetName: user.full_name }})
+        VALUES (${actorId}, 'UPDATE_USER', 'users', ${id}, ${diff})
       `;
     }
+
+    return Response.json({ user: updatedUser });
 
     return Response.json({ user });
   } catch (err) {
