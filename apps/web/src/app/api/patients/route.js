@@ -108,7 +108,7 @@ export async function GET(request) {
     query += ` ORDER BY created_at DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
     values.push(limit, offset);
 
-    const patients = await sql(query, values);
+    const patients = await sql.unsafe(query, values);
 
     return Response.json({ patients });
   } catch (err) {

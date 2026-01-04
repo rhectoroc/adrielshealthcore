@@ -142,7 +142,7 @@ export async function PUT(request, { params }) {
     `;
 
     values.push(id);
-    const result = await sql(updateQuery, values);
+    const result = await sql.unsafe(updateQuery, values);
     const patient = result?.[0] || null;
 
     if (!patient) {

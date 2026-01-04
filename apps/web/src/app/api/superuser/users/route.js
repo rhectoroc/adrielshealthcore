@@ -47,7 +47,7 @@ export async function GET(request) {
 
     query += ` ORDER BY created_at DESC`;
 
-    const users = await sql(query, values);
+    const users = await sql.unsafe(query, values);
 
     return Response.json({ users });
   } catch (err) {

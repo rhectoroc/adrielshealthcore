@@ -110,7 +110,7 @@ export async function PUT(request) {
       `;
 
       values.push(existingRows[0].id);
-      const result = await sql(updateQuery, values);
+      const result = await sql.unsafe(updateQuery, values);
       const updated = result?.[0] || null;
 
       return Response.json({ user: updated });
@@ -134,9 +134,13 @@ export async function PUT(request) {
       return Response.json({ user: created });
     }
   } catch (err) {
-    console.error("PUT /api/profile error:", err);
+    console.error("PUT /api/profile error details:", {
+      message: err.message,
+      stack: err.stack,
+      email: session?.user?.email
+    });
     return Response.json(
-      { error: "Error interno del servidor" },
+      { error: `Error interno: ${err.message}` },
       { status: 500 },
     );
   }
