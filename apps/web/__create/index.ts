@@ -91,7 +91,9 @@ if (process.env.AUTH_SECRET) {
   app.use(
     '*',
     initAuthConfig((c) => {
-      const useSecureCookies = process.env.AUTH_URL?.startsWith('https') ?? false;
+      const useSecureCookies = process.env.AUTH_URL?.startsWith('https') ||
+        c.req.header("x-forwarded-proto") === "https" ||
+        !!c.req.header("cookie")?.includes("__Secure-authjs.session-token");
 
       return {
         secret: c.env.AUTH_SECRET,

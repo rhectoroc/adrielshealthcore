@@ -4,13 +4,17 @@ import { getContext } from 'hono/context-storage';
 export default function CreateAuth() {
 	const auth = async () => {
 		const c = getContext();
-		const secureCookie = process.env.AUTH_URL?.startsWith('https') ?? false;
+		const cookieHeader = c.req.header("cookie");
+		const secureCookie = process.env.AUTH_URL?.startsWith('https') ||
+			c.req.header("x-forwarded-proto") === "https" ||
+			!!cookieHeader?.includes("__Secure-authjs.session-token");
 
 		console.log("[DEBUG] auth() call:", {
 			hasAuthSecret: !!process.env.AUTH_SECRET,
 			secureCookie,
 			url: c.req.url,
-			cookieHeader: c.req.header("cookie")
+			proto: c.req.header("x-forwarded-proto"),
+			hasSecureCookie: !!cookieHeader?.includes("__Secure-")
 		});
 
 		const token = await getToken({
