@@ -50,9 +50,24 @@ CREATE TABLE IF NOT EXISTS users (
     rif TEXT,
     is_verified BOOLEAN DEFAULT FALSE,
     doctor_id UUID, -- For future linking if needed
+    parent_doctor_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Link staff to a doctor
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- System Settings Table
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Default Settings
+INSERT INTO system_settings (key, value) VALUES 
+('language', 'es'),
+('date_format', 'MM/DD/YYYY'),
+('timezone', 'America/Caracas')
+ON CONFLICT (key) DO NOTHING;
 
 -- Seed internal admin if needed (optional)
 -- INSERT INTO users (email, role, full_name, is_verified) 

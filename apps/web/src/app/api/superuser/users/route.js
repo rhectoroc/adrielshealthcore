@@ -29,7 +29,7 @@ export async function GET(request) {
     const role = searchParams.get("role");
     const search = searchParams.get("search");
 
-    let query = `SELECT id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, created_at FROM users WHERE 1=1`;
+    let query = `SELECT id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, parent_doctor_id, created_at FROM users WHERE 1=1`;
     const values = [];
     let paramCount = 1;
 
@@ -84,7 +84,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { email, role, fullName, mppsNumber, colegioNumber, specialty, rif } =
+    const { email, role, fullName, mppsNumber, colegioNumber, specialty, rif, parent_doctor_id } =
       body;
 
     if (!email || !role || !fullName) {
@@ -118,9 +118,8 @@ export async function POST(request) {
       );
     }
 
-    // Create user in users table
     const result = await sql`
-      INSERT INTO users (email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified)
+      INSERT INTO users (email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, parent_doctor_id)
       VALUES (
         ${email},
         ${role},
@@ -129,9 +128,10 @@ export async function POST(request) {
         ${colegioNumber || null},
         ${specialty || null},
         ${rif || null},
-        ${false}
+        ${false},
+        ${parent_doctor_id || null}
       )
-      RETURNING id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, created_at
+      RETURNING id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, parent_doctor_id, created_at
     `;
 
     const newUser = result?.[0] || null;
