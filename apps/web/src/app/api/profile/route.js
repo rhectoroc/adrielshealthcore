@@ -14,7 +14,7 @@ export async function GET() {
     const userRows = await sql`
       SELECT id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, doctor_id, created_at
       FROM users
-      WHERE email = ${session.user.email}
+      WHERE LOWER(email) = LOWER(${session.user.email})
       LIMIT 1
     `;
 
@@ -43,7 +43,7 @@ export async function PUT(request) {
 
     // Check if user already exists in users table
     const existingRows = await sql`
-      SELECT id FROM users WHERE email = ${session.user.email} LIMIT 1
+      SELECT id, role FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1
     `;
 
     if (existingRows && existingRows.length > 0) {
@@ -59,9 +59,14 @@ export async function PUT(request) {
       }
 
       if (role) {
-        setClauses.push(`role = $${paramCount}`);
-        values.push(role);
-        paramCount++;
+        // Prevent accidental downgrade of superuser role from onboarding form
+        if (existingRows[0].role === "superuser" && role !== "superuser") {
+          console.log("Blocking role downgrade for superuser:", session.user.email);
+        } else {
+          setClauses.push(`role = $${paramCount}`);
+          values.push(role);
+          paramCount++;
+        }
       }
 
       if (mppsNumber && mppsNumber.trim().length > 0) {
@@ -100,11 +105,11 @@ export async function PUT(request) {
       const updateQuery = `
         UPDATE users 
         SET ${setClauses.join(", ")} 
-        WHERE email = $${paramCount}
+        WHERE id = $${paramCount}
         RETURNING id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified
       `;
 
-      values.push(session.user.email);
+      values.push(existingRows[0].id);
       const result = await sql(updateQuery, values);
       const updated = result?.[0] || null;
 

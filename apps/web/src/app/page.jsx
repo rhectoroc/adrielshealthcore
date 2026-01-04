@@ -33,12 +33,14 @@ export default function HomePage() {
 
           // Redirect to superuser dashboard if user is superuser
           if (data.user && data.user.role === "superuser") {
+            console.log("SuperUser detected, redirecting...");
             window.location.href = "/superuser/dashboard";
             return;
           }
 
           // Redirect to onboarding if profile not complete
           if (!data.user) {
+            console.log("No profile found, redirecting to onboarding...");
             window.location.href = "/onboarding";
           }
         }
@@ -143,11 +145,10 @@ export default function HomePage() {
             <a
               key={index}
               href={item.href}
-              className={`w-full flex items-center px-4 py-3 mb-1 rounded-lg cursor-pointer transition-all duration-200 ${
-                item.active
+              className={`w-full flex items-center px-4 py-3 mb-1 rounded-lg cursor-pointer transition-all duration-200 ${item.active
                   ? "bg-[#2E39C9] dark:bg-[#4F46E5] border-l-2 border-white text-white"
                   : "text-white text-opacity-60 hover:text-opacity-80 hover:bg-white hover:bg-opacity-10 active:bg-opacity-15"
-              }`}
+                }`}
             >
               <item.icon size={18} className="mr-3" />
               <span
