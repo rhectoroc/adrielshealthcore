@@ -58,7 +58,8 @@ export default function SetupPage() {
       });
 
       if (!res.ok) {
-        throw new Error("Error al crear el SuperUsuario");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Error al crear el SuperUsuario");
       }
 
       setSuccess(true);
