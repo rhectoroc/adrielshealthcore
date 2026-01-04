@@ -127,12 +127,6 @@ export async function PUT(request) {
       `;
 
       values.push(existingRows[0].id);
-      console.log("[DEBUG] Profile update:", {
-        email: session.user.email,
-        existingRole: existingRows[0].role,
-        requestedRole: role,
-        id: existingRows[0].id
-      });
 
       const result = await sql.unsafe(updateQuery, values);
       const updated = result?.[0] || null;
@@ -140,11 +134,6 @@ export async function PUT(request) {
       return Response.json({ user: updated });
     } else {
       // Create new user
-      console.log("[DEBUG] Profile creation:", {
-        email: session.user.email,
-        requestedRole: role || "doctor"
-      });
-
       const insertResult = await sql`
         INSERT INTO users (email, role, full_name, mpps_number, colegio_number, specialty, rif)
         VALUES (
