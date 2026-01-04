@@ -89,140 +89,143 @@ for (const method of ['post', 'put', 'patch'] as const) {
 if (process.env.AUTH_SECRET) {
   app.use(
     '*',
-    initAuthConfig((c) => ({
-      secret: c.env.AUTH_SECRET,
-      basePath: '/api/auth',
-      pages: {
-        signIn: '/account/signin',
-        signOut: '/account/logout',
-      },
-      skipCSRFCheck,
-      session: {
-        strategy: 'jwt',
-      },
-      callbacks: {
-        session({ session, token }) {
-          if (token.sub) {
-            session.user.id = token.sub;
-          }
-          return session;
+    initAuthConfig((c) => {
+      const useSecureCookies = process.env.AUTH_URL?.startsWith('https') ?? false;
+
+      return {
+        secret: c.env.AUTH_SECRET,
+        basePath: '/api/auth',
+        pages: {
+          signIn: '/account/signin',
+          signOut: '/account/logout',
         },
-      },
-      cookies: {
-        csrfToken: {
-          options: {
-            secure: true,
-            sameSite: 'none',
+        skipCSRFCheck,
+        session: {
+          strategy: 'jwt',
+        },
+        callbacks: {
+          session({ session, token }) {
+            if (token.sub) {
+              session.user.id = token.sub;
+            }
+            return session;
           },
         },
-        sessionToken: {
-          options: {
-            secure: true,
-            sameSite: 'none',
+        cookies: {
+          csrfToken: {
+            options: {
+              secure: useSecureCookies,
+              sameSite: 'none',
+            },
+          },
+          sessionToken: {
+            options: {
+              secure: useSecureCookies,
+              sameSite: 'none',
+            },
+          },
+          callbackUrl: {
+            options: {
+              secure: useSecureCookies,
+              sameSite: 'none',
+            },
           },
         },
-        callbackUrl: {
-          options: {
-            secure: true,
-            sameSite: 'none',
-          },
-        },
-      },
-      providers: [
-        Credentials({
-          id: 'credentials-signin',
-          name: 'Credentials Sign in',
-          credentials: {
-            email: {
-              label: 'Email',
-              type: 'email',
+        providers: [
+          Credentials({
+            id: 'credentials-signin',
+            name: 'Credentials Sign in',
+            credentials: {
+              email: {
+                label: 'Email',
+                type: 'email',
+              },
+              password: {
+                label: 'Password',
+                type: 'password',
+              },
             },
-            password: {
-              label: 'Password',
-              type: 'password',
+            authorize: async (credentials) => {
+              const { email, password } = credentials;
+              if (!email || !password) {
+                return null;
+              }
+              if (typeof email !== 'string' || typeof password !== 'string') {
+                return null;
+              }
+
+              // logic to verify if user exists
+              const user = await adapter.getUserByEmail(email);
+              if (!user) {
+                return null;
+              }
+              const matchingAccount = user.accounts.find(
+                (account) => account.provider === 'credentials'
+              );
+              const accountPassword = matchingAccount?.password;
+              if (!accountPassword) {
+                return null;
+              }
+
+              const isValid = await verify(accountPassword, password);
+              if (!isValid) {
+                return null;
+              }
+
+              // return user object with the their profile data
+              return user;
             },
-          },
-          authorize: async (credentials) => {
-            const { email, password } = credentials;
-            if (!email || !password) {
-              return null;
-            }
-            if (typeof email !== 'string' || typeof password !== 'string') {
-              return null;
-            }
-
-            // logic to verify if user exists
-            const user = await adapter.getUserByEmail(email);
-            if (!user) {
-              return null;
-            }
-            const matchingAccount = user.accounts.find(
-              (account) => account.provider === 'credentials'
-            );
-            const accountPassword = matchingAccount?.password;
-            if (!accountPassword) {
-              return null;
-            }
-
-            const isValid = await verify(accountPassword, password);
-            if (!isValid) {
-              return null;
-            }
-
-            // return user object with the their profile data
-            return user;
-          },
-        }),
-        Credentials({
-          id: 'credentials-signup',
-          name: 'Credentials Sign up',
-          credentials: {
-            email: {
-              label: 'Email',
-              type: 'email',
+          }),
+          Credentials({
+            id: 'credentials-signup',
+            name: 'Credentials Sign up',
+            credentials: {
+              email: {
+                label: 'Email',
+                type: 'email',
+              },
+              password: {
+                label: 'Password',
+                type: 'password',
+              },
+              name: { label: 'Name', type: 'text' },
+              image: { label: 'Image', type: 'text', required: false },
             },
-            password: {
-              label: 'Password',
-              type: 'password',
-            },
-            name: { label: 'Name', type: 'text' },
-            image: { label: 'Image', type: 'text', required: false },
-          },
-          authorize: async (credentials) => {
-            const { email, password, name, image } = credentials;
-            if (!email || !password) {
-              return null;
-            }
-            if (typeof email !== 'string' || typeof password !== 'string') {
-              return null;
-            }
+            authorize: async (credentials) => {
+              const { email, password, name, image } = credentials;
+              if (!email || !password) {
+                return null;
+              }
+              if (typeof email !== 'string' || typeof password !== 'string') {
+                return null;
+              }
 
-            // logic to verify if user exists
-            const user = await adapter.getUserByEmail(email);
-            if (!user) {
-              const newUser = await adapter.createUser({
-                id: crypto.randomUUID(),
-                emailVerified: null,
-                email,
-                name: typeof name === 'string' && name.length > 0 ? name : undefined,
-                image: typeof image === 'string' && image.length > 0 ? image : undefined,
-              });
-              await adapter.linkAccount({
-                extraData: {
-                  password: await hash(password),
-                },
-                type: 'credentials',
-                userId: newUser.id,
-                providerAccountId: newUser.id,
-                provider: 'credentials',
-              });
-              return newUser;
-            }
-            return null;
-          },
-        }),
-      ],
-    }))
+              // logic to verify if user exists
+              const user = await adapter.getUserByEmail(email);
+              if (!user) {
+                const newUser = await adapter.createUser({
+                  id: crypto.randomUUID(),
+                  emailVerified: null,
+                  email,
+                  name: typeof name === 'string' && name.length > 0 ? name : undefined,
+                  image: typeof image === 'string' && image.length > 0 ? image : undefined,
+                });
+                await adapter.linkAccount({
+                  extraData: {
+                    password: await hash(password),
+                  },
+                  type: 'credentials',
+                  userId: newUser.id,
+                  providerAccountId: newUser.id,
+                  provider: 'credentials',
+                });
+                return newUser;
+              }
+              return null;
+            },
+          }),
+        ],
+      }))
   );
 }
 app.all('/integrations/:path{.+}', async (c, next) => {
