@@ -20,13 +20,24 @@ export async function GET() {
 
     let userProfile = userRows?.[0] || null;
 
+    // Check if any superuser exists in the system
+    const superuserCountResult = await sql`
+      SELECT COUNT(*) as count FROM users WHERE role = 'superuser'
+    `;
+    const superuserExists = parseInt(superuserCountResult?.[0]?.count || 0) > 0;
+
     console.log("[DEBUG] Profile lookup:", {
       sessionEmail: session.user.email,
       foundInDb: !!userProfile,
-      role: userProfile?.role
+      role: userProfile?.role,
+      superuserExists
     });
 
-    return Response.json({ user: userProfile, authUser: session.user });
+    return Response.json({
+      user: userProfile,
+      authUser: session.user,
+      superuserExists
+    });
   } catch (err) {
     console.error("GET /api/profile error:", err);
     return Response.json(

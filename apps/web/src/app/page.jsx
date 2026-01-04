@@ -146,8 +146,8 @@ export default function HomePage() {
               key={index}
               href={item.href}
               className={`w-full flex items-center px-4 py-3 mb-1 rounded-lg cursor-pointer transition-all duration-200 ${item.active
-                  ? "bg-[#2E39C9] dark:bg-[#4F46E5] border-l-2 border-white text-white"
-                  : "text-white text-opacity-60 hover:text-opacity-80 hover:bg-white hover:bg-opacity-10 active:bg-opacity-15"
+                ? "bg-[#2E39C9] dark:bg-[#4F46E5] border-l-2 border-white text-white"
+                : "text-white text-opacity-60 hover:text-opacity-80 hover:bg-white hover:bg-opacity-10 active:bg-opacity-15"
                 }`}
             >
               <item.icon size={18} className="mr-3" />
@@ -215,6 +215,40 @@ export default function HomePage() {
         <div className="px-4 sm:px-6 pb-6">
           {/* Header */}
           <div className="mb-6">
+            {!userProfile && !userLoading && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between">
+                <div>
+                  <h3 className="text-yellow-800 font-semibold text-sm">Configuración Requerida</h3>
+                  <p className="text-yellow-700 text-xs mt-1">
+                    No se encontró un perfil para esta cuenta. Para configurar el sistema como administrador:
+                  </p>
+                </div>
+                <a
+                  href="/setup"
+                  className="px-3 py-1.5 bg-yellow-600 text-white text-xs font-bold rounded hover:bg-yellow-700 transition-colors"
+                >
+                  Ir a /setup
+                </a>
+              </div>
+            )}
+
+            {userProfile && userProfile.role === 'doctor' && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                <div>
+                  <h3 className="text-blue-800 font-semibold text-sm">Modo Doctor</h3>
+                  <p className="text-blue-700 text-xs mt-1">
+                    Usted tiene una cuenta de médico. Si cree que debería ser el administrador principal y el sistema aún no tiene uno:
+                  </p>
+                </div>
+                <a
+                  href="/setup"
+                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition-colors"
+                >
+                  Verificar Setup
+                </a>
+              </div>
+            )}
+
             <h1 className="font-poppins font-semibold text-3xl text-[#1E2559] dark:text-white mb-2">
               Bienvenido, {userProfile?.full_name?.split(" ")[0] || "Doctor"}
             </h1>
