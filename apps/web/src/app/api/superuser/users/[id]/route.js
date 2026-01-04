@@ -108,7 +108,7 @@ export async function PUT(request, { params }) {
     if (actorId) {
       await sql`
         INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-        VALUES (${actorId}, 'UPDATE_USER', 'users', ${user.id}, ${body})
+        VALUES (${actorId}, 'UPDATE_USER', 'users', ${user.id}, ${{ ...body, targetName: user.full_name }})
       `;
     }
 

@@ -561,9 +561,9 @@ export default function SuperUserDashboard() {
                               {log.full_name || "Sistema"}
                             </span>{" "}
                             <span className="text-[#7B8198] dark:text-[#9CA3AF]">
-                              {log.action === "CREATE_USER" && "registró nuevo personal"}
-                              {log.action === "UPDATE_USER" && "actualizó perfil"}
-                              {log.action === "DELETE_USER" && "eliminó cuenta"}
+                              {log.action === "CREATE_USER" && `registró a ${getParsedDetails(log.details)?.targetName || "nuevo personal"}`}
+                              {log.action === "UPDATE_USER" && `actualizó perfil de ${getParsedDetails(log.details)?.targetName || "usuario"}`}
+                              {log.action === "DELETE_USER" && `eliminó cuenta de ${getParsedDetails(log.details)?.full_name || "usuario"}`}
                               {log.action === "UPDATE_SETTINGS" && "cambió configuración global"}
                             </span>
                           </div>
@@ -573,6 +573,7 @@ export default function SuperUserDashboard() {
                           {log.details && (
                             <div className="mt-2 text-[10px] text-[#5C6178] border-l-2 border-indigo-200 pl-2 py-1">
                               {Object.entries(getParsedDetails(log.details) || {}).map(([key, val], i) => {
+                                if (key === 'targetName') return null;
                                 const { label } = translateDetail(key, val);
                                 if (val === null || val === "" || val === undefined) return null;
                                 return <span key={key}>{i > 0 && " • "}{label}</span>;
@@ -784,6 +785,7 @@ export default function SuperUserDashboard() {
                             <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-1">Información procesada:</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                               {Object.entries(getParsedDetails(log.details) || {}).map(([key, value]) => {
+                                if (key === 'targetName') return null;
                                 if (value === null || value === "" || value === undefined) return null;
                                 const { label, value: displayValue } = translateDetail(key, value);
                                 return (
