@@ -532,6 +532,11 @@ export default function SuperUserDashboard() {
                           <div className="font-inter text-xs text-[#7B8198] dark:text-[#9CA3AF] mt-1">
                             {new Date(log.created_at).toLocaleString("es-VE")}
                           </div>
+                          {log.details && (
+                            <div className="mt-2 p-2 bg-gray-50 dark:bg-[#262626] rounded text-[10px] font-mono text-[#5C6178] line-clamp-1">
+                              {JSON.stringify(log.details)}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))
@@ -732,7 +737,22 @@ export default function SuperUserDashboard() {
                       <div>
                         <p className="text-sm font-bold">{log.full_name} <span className="font-normal text-gray-500">[{log.role}]</span></p>
                         <p className="text-sm text-gray-600">{log.action} en {log.entity_type}</p>
-                        <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">{new Date(log.created_at).toLocaleString()}</p>
+                        {log.details && (
+                          <div className="mt-2 p-3 bg-[#F8FAFF] dark:bg-[#262626] border border-[#ECEFF9] dark:border-[#374151] rounded-lg">
+                            <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-1">Detalles del Cambio:</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {Object.entries(log.details).map(([key, value]) => (
+                                <div key={key} className="flex flex-col">
+                                  <span className="text-[9px] text-[#A0A5BA] uppercase">{key}</span>
+                                  <span className="text-xs font-medium text-[#1E2559] dark:text-white truncate" title={String(value)}>
+                                    {String(value)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">{new Date(log.created_at).toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
