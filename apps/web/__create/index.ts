@@ -95,14 +95,14 @@ if (process.env.AUTH_SECRET) {
 
       return {
         secret: c.env.AUTH_SECRET,
-        basePath: '/api/auth',
+        basePath: "/api/auth",
         pages: {
-          signIn: '/account/signin',
-          signOut: '/account/logout',
+          signIn: "/account/signin",
+          signOut: "/account/logout",
         },
         skipCSRFCheck,
         session: {
-          strategy: 'jwt',
+          strategy: "jwt",
         },
         callbacks: {
           session({ session, token }) {
@@ -116,34 +116,34 @@ if (process.env.AUTH_SECRET) {
           csrfToken: {
             options: {
               secure: useSecureCookies,
-              sameSite: 'none',
+              sameSite: "none",
             },
           },
           sessionToken: {
             options: {
               secure: useSecureCookies,
-              sameSite: 'none',
+              sameSite: "none",
             },
           },
           callbackUrl: {
             options: {
               secure: useSecureCookies,
-              sameSite: 'none',
+              sameSite: "none",
             },
           },
         },
         providers: [
           Credentials({
-            id: 'credentials-signin',
-            name: 'Credentials Sign in',
+            id: "credentials-signin",
+            name: "Credentials Sign in",
             credentials: {
               email: {
-                label: 'Email',
-                type: 'email',
+                label: "Email",
+                type: "email",
               },
               password: {
-                label: 'Password',
-                type: 'password',
+                label: "Password",
+                type: "password",
               },
             },
             authorize: async (credentials) => {
@@ -151,7 +151,7 @@ if (process.env.AUTH_SECRET) {
               if (!email || !password) {
                 return null;
               }
-              if (typeof email !== 'string' || typeof password !== 'string') {
+              if (typeof email !== "string" || typeof password !== "string") {
                 return null;
               }
 
@@ -161,7 +161,7 @@ if (process.env.AUTH_SECRET) {
                 return null;
               }
               const matchingAccount = user.accounts.find(
-                (account) => account.provider === 'credentials'
+                (account) => account.provider === "credentials",
               );
               const accountPassword = matchingAccount?.password;
               if (!accountPassword) {
@@ -178,26 +178,26 @@ if (process.env.AUTH_SECRET) {
             },
           }),
           Credentials({
-            id: 'credentials-signup',
-            name: 'Credentials Sign up',
+            id: "credentials-signup",
+            name: "Credentials Sign up",
             credentials: {
               email: {
-                label: 'Email',
-                type: 'email',
+                label: "Email",
+                type: "email",
               },
               password: {
-                label: 'Password',
-                type: 'password',
+                label: "Password",
+                type: "password",
               },
-              name: { label: 'Name', type: 'text' },
-              image: { label: 'Image', type: 'text', required: false },
+              name: { label: "Name", type: "text" },
+              image: { label: "Image", type: "text", required: false },
             },
             authorize: async (credentials) => {
               const { email, password, name, image } = credentials;
               if (!email || !password) {
                 return null;
               }
-              if (typeof email !== 'string' || typeof password !== 'string') {
+              if (typeof email !== "string" || typeof password !== "string") {
                 return null;
               }
 
@@ -208,17 +208,23 @@ if (process.env.AUTH_SECRET) {
                   id: crypto.randomUUID(),
                   emailVerified: null,
                   email,
-                  name: typeof name === 'string' && name.length > 0 ? name : undefined,
-                  image: typeof image === 'string' && image.length > 0 ? image : undefined,
+                  name:
+                    typeof name === "string" && name.length > 0
+                      ? name
+                      : undefined,
+                  image:
+                    typeof image === "string" && image.length > 0
+                      ? image
+                      : undefined,
                 });
                 await adapter.linkAccount({
                   extraData: {
                     password: await hash(password),
                   },
-                  type: 'credentials',
+                  type: "credentials",
                   userId: newUser.id,
                   providerAccountId: newUser.id,
-                  provider: 'credentials',
+                  provider: "credentials",
                 });
                 return newUser;
               }
