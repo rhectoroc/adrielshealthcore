@@ -4,7 +4,7 @@ import {
 	route,
 } from '@react-router/dev/routes';
 
-const pageModules = import.meta.glob('./**/page.jsx', { eager: true });
+const pageModules = import.meta.glob('./**/page.jsx');
 
 function generateRoutesFromGlob(): RouteConfigEntry[] {
 	const routes: RouteConfigEntry[] = [];
