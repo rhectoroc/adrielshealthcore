@@ -20,5 +20,5 @@ COPY --from=build /usr/src/app .
 # Set environment variables for production
 ENV NODE_ENV=production
 
-EXPOSE 4000
+EXPOSE 3000
 CMD [ "bun", "run", "dev" ]
