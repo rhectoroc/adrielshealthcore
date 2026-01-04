@@ -102,11 +102,15 @@ export async function PUT(request, { params }) {
     }
 
     // Log the action
-    await sql`
-      INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-      SELECT id, 'UPDATE_USER', 'users', ${user.id}, ${JSON.stringify(body)}
-      FROM users WHERE email = ${session.user.email}
-    `;
+    const actorResult = await sql`SELECT id FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1`;
+    const actorId = actorResult?.[0]?.id || null;
+
+    if (actorId) {
+      await sql`
+        INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
+        VALUES (${actorId}, 'UPDATE_USER', 'users', ${user.id}, ${JSON.stringify(body)})
+      `;
+    }
 
     return Response.json({ user });
   } catch (err) {

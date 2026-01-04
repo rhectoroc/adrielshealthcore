@@ -26,13 +26,6 @@ export async function GET() {
     `;
     const superuserExists = parseInt(superuserCountResult?.[0]?.count || 0) > 0;
 
-    console.log("[DEBUG] Profile lookup:", {
-      sessionEmail: session.user.email,
-      foundInDb: !!userProfile,
-      role: userProfile?.role,
-      superuserExists
-    });
-
     return Response.json({
       user: userProfile,
       authUser: session.user,

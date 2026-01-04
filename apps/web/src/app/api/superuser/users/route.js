@@ -137,11 +137,15 @@ export async function POST(request) {
     const newUser = result?.[0] || null;
 
     // Log the action
-    await sql`
-      INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-      SELECT id, 'CREATE_USER', 'users', ${newUser.id}, ${JSON.stringify({ email, role, fullName })}
-      FROM users WHERE email = ${session.user.email}
-    `;
+    const actorResult = await sql`SELECT id FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1`;
+    const actorId = actorResult?.[0]?.id || null;
+
+    if (actorId) {
+      await sql`
+        INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
+        VALUES (${actorId}, 'CREATE_USER', 'users', ${newUser.id}, ${JSON.stringify({ email, role, fullName })})
+      `;
+    }
 
     return Response.json({ user: newUser }, { status: 201 });
   } catch (err) {

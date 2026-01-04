@@ -43,6 +43,8 @@ export default function SuperUserDashboard() {
     timezone: "America/Caracas"
   });
   const [backupLoading, setBackupLoading] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: "",
@@ -251,6 +253,55 @@ export default function SuperUserDashboard() {
     }
   };
 
+  const handleEditClick = (user) => {
+    setEditingUser(user);
+    setNewUser({
+      email: user.email,
+      role: user.role,
+      fullName: user.full_name,
+      mppsNumber: user.mpps_number || "",
+      colegioNumber: user.colegio_number || "",
+      specialty: user.specialty || "",
+      rif: user.rif || "",
+      parent_doctor_id: user.parent_doctor_id || ""
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/superuser/users/${editingUser.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+
+      if (res.ok) {
+        setShowEditModal(false);
+        setEditingUser(null);
+        setNewUser({
+          email: "",
+          role: "doctor",
+          fullName: "",
+          mppsNumber: "",
+          colegioNumber: "",
+          specialty: "",
+          rif: "",
+          parent_doctor_id: ""
+        });
+        fetchUsers();
+        fetchStats();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Error al actualizar usuario");
+      }
+    } catch (err) {
+      console.error("Error updating user:", err);
+      alert("Error al actualizar usuario");
+    }
+  };
+
   const handleDeleteUser = async (userId) => {
     if (!confirm("¿Está seguro de eliminar este usuario?")) return;
 
@@ -350,8 +401,8 @@ export default function SuperUserDashboard() {
                 setSidebarOpen(false);
               }}
               className={`w-full flex items-center px-4 py-3 mb-1 rounded-lg transition-all duration-200 ${activeTab === item.id
-                  ? "bg-white dark:bg-[#374151] text-[#2E39C9] dark:text-white shadow-lg"
-                  : "text-white text-opacity-70 hover:text-opacity-100 hover:bg-white hover:bg-opacity-10"
+                ? "bg-white dark:bg-[#374151] text-[#2E39C9] dark:text-white shadow-lg"
+                : "text-white text-opacity-70 hover:text-opacity-100 hover:bg-white hover:bg-opacity-10"
                 }`}
             >
               <item.icon size={18} className="mr-3" />
@@ -503,7 +554,7 @@ export default function SuperUserDashboard() {
                   className="flex items-center space-x-2 px-4 py-2 bg-[#2E39C9] dark:bg-[#4F46E5] text-white rounded-lg font-inter font-medium text-sm hover:bg-[#1E2A99] dark:hover:bg-[#4338CA] shadow-md transition-all"
                 >
                   <UserPlus size={18} />
-                  <span>Dar de Alta</span>
+                  <span>Crear</span>
                 </button>
               </div>
 
@@ -575,6 +626,9 @@ export default function SuperUserDashboard() {
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end space-x-1">
+                              <button onClick={() => handleEditClick(user)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
+                                <Edit2 size={16} />
+                              </button>
                               <button onClick={() => handleDeleteUser(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                                 <Trash2 size={16} />
                               </button>
@@ -693,7 +747,7 @@ export default function SuperUserDashboard() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#ECEFF9] dark:border-[#374151] p-8 max-w-2xl w-full">
-            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">Vincular Nuevo Personal</h2>
+            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">Crear Nuevo Personal</h2>
 
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -734,7 +788,59 @@ export default function SuperUserDashboard() {
               </div>
               <div className="flex space-x-3 pt-6">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 p-4 rounded-xl font-bold bg-gray-100">Cancelar</button>
-                <button type="submit" className="flex-1 p-4 rounded-xl font-bold bg-blue-600 text-white shadow-lg shadow-blue-200">Registrar Personal</button>
+                <button type="submit" className="flex-1 p-4 rounded-xl font-bold bg-blue-600 text-white shadow-lg shadow-blue-200">Crear</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#ECEFF9] dark:border-[#374151] p-8 max-w-2xl w-full">
+            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">Editar Personal</h2>
+
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre Completo</label>
+                  <input type="text" required value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Correo Electrónico</label>
+                  <input type="email" required disabled value={newUser.email} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-200 cursor-not-allowed" title="El email no puede ser modificado" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Rol en el Sistema</label>
+                  <select required value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
+                    <option value="doctor">Médico</option>
+                    <option value="nurse">Enfermería</option>
+                    <option value="administrator">Administrativo</option>
+                  </select>
+                </div>
+                {newUser.role !== 'doctor' && (
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Asignar a Médico (Equipo)</label>
+                    <select value={newUser.parent_doctor_id} onChange={e => setNewUser({ ...newUser, parent_doctor_id: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 border-blue-200">
+                      <option value="">Seleccione un médico</option>
+                      {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name} ({d.specialty})</option>)}
+                    </select>
+                  </div>
+                )}
+                {newUser.role === 'doctor' && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Especialidad</label>
+                    <select value={newUser.specialty} onChange={e => setNewUser({ ...newUser, specialty: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
+                      <option value="">Seleccione</option>
+                      {specialties.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="flex space-x-3 pt-6">
+                <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 p-4 rounded-xl font-bold bg-gray-100">Cancelar</button>
+                <button type="submit" className="flex-1 p-4 rounded-xl font-bold bg-blue-600 text-white shadow-lg shadow-blue-200">Guardar Cambios</button>
               </div>
             </form>
           </div>
