@@ -143,7 +143,7 @@ export async function POST(request) {
     if (actorId) {
       await sql`
         INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-        VALUES (${actorId}, 'CREATE_USER', 'users', ${newUser.id}, ${JSON.stringify({ email, role, fullName })})
+        VALUES (${actorId}, 'CREATE_USER', 'users', ${newUser.id}, ${{ email, role, fullName }})
       `;
     }
 

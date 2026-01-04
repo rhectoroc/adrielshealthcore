@@ -9,23 +9,10 @@ export default function CreateAuth() {
 			c.req.header("x-forwarded-proto") === "https" ||
 			!!cookieHeader?.includes("__Secure-authjs.session-token");
 
-		console.log("[DEBUG] auth() call:", {
-			hasAuthSecret: !!process.env.AUTH_SECRET,
-			secureCookie,
-			url: c.req.url,
-			proto: c.req.header("x-forwarded-proto"),
-			hasSecureCookie: !!cookieHeader?.includes("__Secure-")
-		});
-
 		const token = await getToken({
 			req: c.req.raw,
 			secret: process.env.AUTH_SECRET,
 			secureCookie,
-		});
-
-		console.log("[DEBUG] getToken result:", {
-			found: !!token,
-			sub: token?.sub
 		});
 
 		if (token) {

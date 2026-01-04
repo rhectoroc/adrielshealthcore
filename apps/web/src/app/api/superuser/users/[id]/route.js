@@ -11,7 +11,7 @@ export async function PUT(request, { params }) {
 
     // Verify user is superuser
     const userRows = await sql`
-      SELECT role FROM users WHERE email = ${session.user.email} LIMIT 1
+      SELECT role FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1
     `;
 
     if (
@@ -108,7 +108,7 @@ export async function PUT(request, { params }) {
     if (actorId) {
       await sql`
         INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-        VALUES (${actorId}, 'UPDATE_USER', 'users', ${user.id}, ${JSON.stringify(body)})
+        VALUES (${actorId}, 'UPDATE_USER', 'users', ${user.id}, ${body})
       `;
     }
 
@@ -132,7 +132,7 @@ export async function DELETE(request, { params }) {
 
     // Verify user is superuser
     const userRows = await sql`
-      SELECT id, role FROM users WHERE email = ${session.user.email} LIMIT 1
+      SELECT id, role FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1
     `;
 
     if (
@@ -171,7 +171,7 @@ export async function DELETE(request, { params }) {
     // Log the action
     await sql`
       INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-      VALUES (${userRows[0].id}, 'DELETE_USER', 'users', ${id}, ${JSON.stringify(userToDelete[0])})
+      VALUES (${userRows[0].id}, 'DELETE_USER', 'users', ${id}, ${userToDelete[0]})
     `;
 
     return Response.json({ success: true, message: "Usuario eliminado" });

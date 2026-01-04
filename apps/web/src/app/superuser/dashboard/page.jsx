@@ -383,6 +383,17 @@ export default function SuperUserDashboard() {
     return { label: labels[key] || key, value: String(displayValue) };
   };
 
+  const getParsedDetails = (details) => {
+    if (!details) return null;
+    if (typeof details === 'object') return details;
+    try {
+      const parsed = JSON.parse(details);
+      return typeof parsed === 'object' ? parsed : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
   const navItems = [
     { id: "dashboard", icon: BarChart3, label: "Dashboard" },
     { id: "users", icon: Users, label: "Personal Médico" },
@@ -561,9 +572,9 @@ export default function SuperUserDashboard() {
                           </div>
                           {log.details && (
                             <div className="mt-2 text-[10px] text-[#5C6178] border-l-2 border-indigo-200 pl-2 py-1">
-                              {Object.entries(log.details).map(([key, val], i) => {
+                              {Object.entries(getParsedDetails(log.details) || {}).map(([key, val], i) => {
                                 const { label } = translateDetail(key, val);
-                                if (!val || val === "") return null;
+                                if (val === null || val === "" || val === undefined) return null;
                                 return <span key={key}>{i > 0 && " • "}{label}</span>;
                               }).filter(Boolean)}
                             </div>
@@ -772,7 +783,7 @@ export default function SuperUserDashboard() {
                           <div className="mt-2 p-3 bg-[#F8FAFF] dark:bg-[#262626] border border-[#ECEFF9] dark:border-[#374151] rounded-lg">
                             <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-1">Información procesada:</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                              {Object.entries(log.details).map(([key, value]) => {
+                              {Object.entries(getParsedDetails(log.details) || {}).map(([key, value]) => {
                                 if (value === null || value === "" || value === undefined) return null;
                                 const { label, value: displayValue } = translateDetail(key, value);
                                 return (
