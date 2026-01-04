@@ -12,6 +12,8 @@ export async function GET() {
     const count = parseInt(result?.[0]?.count || 0);
     const exists = count > 0;
 
+    console.log("[DEBUG] Superuser check:", { exists, count });
+
     return Response.json({ exists, count });
   } catch (err) {
     console.error("GET /api/superuser/check error:", err);
