@@ -225,7 +225,8 @@ if (process.env.AUTH_SECRET) {
             },
           }),
         ],
-      }))
+      };
+    })
   );
 }
 app.all('/integrations/:path{.+}', async (c, next) => {
