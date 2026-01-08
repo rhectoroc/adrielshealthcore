@@ -890,59 +890,102 @@ export default function SuperUserDashboard() {
             <div>
               <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">Registros de Actividad</h1>
               <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] p-6 shadow-sm">
-                <div className="space-y-4">
-                  {logs.map((log, index) => (
-                    <div key={index} className="flex items-start space-x-4 py-4 border-b last:border-0">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Activity size={18} className="text-indigo-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">{log.full_name} <span className="font-normal text-gray-500">[{log.role}]</span></p>
-                        <p className="text-sm text-gray-600">{log.action} en {log.entity_type}</p>
-                        {log.details && (
-                          <div className="mt-2 p-3 bg-[#F8FAFF] dark:bg-[#262626] border border-[#ECEFF9] dark:border-[#374151] rounded-lg">
-                            <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-1">Información procesada:</p>
-                            <div className="grid grid-cols-1 gap-y-2 mt-2">
-                              {(() => {
-                                const parsed = getParsedDetails(log.details) || {};
-                                const isUpdate = !!parsed.changes;
-                                const source = parsed.changes || parsed;
+                <div className="space-y-6">
+                  {logs.map((log, index) => {
+                    const parsedDetails = getParsedDetails(log.details) || {};
+                    const source = parsedDetails.changes || parsedDetails;
+                    const isUpdate = !!parsedDetails.changes;
 
-                                return Object.entries(source).map(([key, value]) => {
+                    const translateAction = (action) => {
+                      const map = {
+                        "CREATE_USER": "Creación de Usuario",
+                        "UPDATE_USER": "Actualización de Usuario",
+                        "DELETE_USER": "Eliminación de Usuario",
+                        "UPDATE_SETTINGS": "Configuración del Sistema",
+                        "LOGIN": "Inicio de Sesión"
+                      };
+                      return map[action] || action;
+                    };
+
+                    const formatTime = (dateStr) => {
+                      return new Date(dateStr).toLocaleString("es-VE", {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: true
+                      });
+                    };
+
+                    return (
+                      <div key={index} className="flex items-start space-x-4 pb-6 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
+                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                          <Activity size={18} className="text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                            <div>
+                              <p className="text-sm font-bold text-[#1E2559] dark:text-white">
+                                {translateAction(log.action)}
+                              </p>
+                              <p className="text-xs text-gray-500 mb-2">
+                                Realizado por: <span className="font-medium text-gray-700 dark:text-gray-300">{log.full_name}</span>
+                                <span className="opacity-70 px-1">[{translateDetail('role', log.role).value}]</span>
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-1 rounded inline-block">
+                                {formatTime(log.created_at)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Detalles */}
+                          {(Object.keys(source).length > 0) && (
+                            <div className="mt-3 bg-[#F8FAFF] dark:bg-[#262626] border border-[#ECEFF9] dark:border-[#374151] rounded-lg p-4">
+                              <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-2 tracking-wider">Detalles del Cambio</p>
+                              <div className="space-y-2">
+                                {Object.entries(source).map(([key, value]) => {
                                   if (key === 'targetName') return null;
+
                                   const { label } = translateDetail(key, value);
 
+                                  // Logica para updates: "Campo: Valor anterior -> Valor nuevo"
                                   if (isUpdate && typeof value === 'object' && value !== null && 'old' in value) {
                                     return (
-                                      <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-                                        <span className="text-[9px] text-[#A0A5BA] uppercase font-semibold">{label}</span>
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-[10px] line-through text-gray-400">{renderValueText(key, value.old)}</span>
-                                          <span className="text-gray-300">→</span>
-                                          <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">{renderValueText(key, value.new)}</span>
-                                        </div>
+                                      <div key={key} className="text-sm border-b border-dashed border-indigo-100 dark:border-gray-700 last:border-0 pb-1 last:pb-0">
+                                        <span className="font-semibold text-gray-600 dark:text-gray-400">{label}:</span>{" "}
+                                        <span className="text-red-400 line-through decoration-red-400/50 mx-1">{renderValueText(key, value.old)}</span>
+                                        <span className="text-gray-400">→</span>
+                                        <span className="text-green-600 dark:text-green-400 font-medium ml-1">{renderValueText(key, value.new)}</span>
                                       </div>
                                     );
                                   }
 
+                                  // Logica simple: "Campo: Valor"
                                   if (value === null || value === "" || value === undefined) return null;
                                   return (
-                                    <div key={key} className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-1">
-                                      <span className="text-[9px] text-[#A0A5BA] uppercase font-semibold">{label}</span>
-                                      <span className="text-xs font-medium text-[#1E2559] dark:text-white truncate max-w-[150px]">
-                                        {renderValueText(key, value)}
-                                      </span>
+                                    <div key={key} className="text-sm flex items-start">
+                                      <span className="font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">{label}:</span>
+                                      <span className="text-[#1E2559] dark:text-white font-medium ml-2">{renderValueText(key, value)}</span>
                                     </div>
                                   );
-                                }).filter(Boolean);
-                              })()}
+                                })}
+                                {parsedDetails.targetName && (
+                                  <div className="text-sm mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-gray-500 italic">
+                                    Usuario afectado: {parsedDetails.targetName}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        <p className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">{new Date(log.created_at).toLocaleString()}</p>
+                          )}
+                        </div>
                       </div>
+                    );
+                  })}
+                  {logs.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Activity className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                      <p>No hay registros de actividad aún.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
