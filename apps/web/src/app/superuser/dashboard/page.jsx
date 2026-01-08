@@ -1016,7 +1016,9 @@ export default function SuperUserDashboard() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#ECEFF9] dark:border-[#374151] p-8 max-w-2xl w-full">
-            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">Crear Nuevo Personal</h2>
+            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">
+              {activeTab === 'security' ? "Crear Nuevo Administrador" : "Crear Nuevo Personal"}
+            </h2>
 
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1031,12 +1033,20 @@ export default function SuperUserDashboard() {
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Rol en el Sistema</label>
                   <select required value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
-                    <option value="doctor">Médico</option>
-                    <option value="nurse">Enfermería</option>
-                    <option value="administrator">Administrativo</option>
+                    {activeTab === 'security' ? (
+                      <>
+                        <option value="administrator">Administrativo</option>
+                        <option value="superuser">SuperUsuario</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="doctor">Médico</option>
+                        <option value="nurse">Enfermería</option>
+                      </>
+                    )}
                   </select>
                 </div>
-                {newUser.role !== 'doctor' && (
+                {(newUser.role === 'nurse') && (
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Asignar a Médico (Equipo)</label>
                     <select value={newUser.parent_doctor_id} onChange={e => setNewUser({ ...newUser, parent_doctor_id: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 border-blue-200">
@@ -1068,7 +1078,9 @@ export default function SuperUserDashboard() {
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#ECEFF9] dark:border-[#374151] p-8 max-w-2xl w-full">
-            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">Editar Personal</h2>
+            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">
+              {activeTab === 'security' ? "Editar Administrador" : "Editar Personal"}
+            </h2>
 
             <form onSubmit={handleUpdateUser} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1083,12 +1095,20 @@ export default function SuperUserDashboard() {
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Rol en el Sistema</label>
                   <select required value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
-                    <option value="doctor">Médico</option>
-                    <option value="nurse">Enfermería</option>
-                    <option value="administrator">Administrativo</option>
+                    {activeTab === 'security' ? (
+                      <>
+                        <option value="administrator">Administrativo</option>
+                        <option value="superuser">SuperUsuario</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="doctor">Médico</option>
+                        <option value="nurse">Enfermería</option>
+                      </>
+                    )}
                   </select>
                 </div>
-                {newUser.role !== 'doctor' && (
+                {(newUser.role === 'nurse') && (
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Asignar a Médico (Equipo)</label>
                     <select value={newUser.parent_doctor_id} onChange={e => setNewUser({ ...newUser, parent_doctor_id: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 border-blue-200">
