@@ -85,7 +85,7 @@ export default function SignInPage() {
             className="w-12 h-12 mx-auto mb-4"
           />
           <h1 className="font-poppins font-semibold text-3xl text-[#1E2559] dark:text-white mb-2">
-            Bienvenido de nuevo
+            Bienvenido
           </h1>
           <p className="font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
             Inicie sesión en HealthCore
