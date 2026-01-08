@@ -585,7 +585,17 @@ export default function SuperUserDashboard() {
                                   const isTransition = typeof val === 'object' && val !== null && 'old' in val;
                                   const { label } = translateDetail(key, isTransition ? val.new : val);
                                   if (val === null || val === "" || val === undefined) return null;
-                                  return <span key={key}>{i > 0 && " • "}{label}</span>;
+                                  return (
+                                    <span key={key}>
+                                      {i > 0 && " • "}
+                                      {label}
+                                      {isTransition && (
+                                        <span className="opacity-70 italic ml-1">
+                                          ({renderValueText(key, val.old)} → {renderValueText(key, val.new)})
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
                                 }).filter(Boolean);
                               })()}
                             </div>

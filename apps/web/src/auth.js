@@ -63,7 +63,7 @@ function Adapter(client) {
       }
       const userData = result.rows[0];
       const accountsData = await client.query(
-        'select * from auth_accounts where "providerAccountId" = $1',
+        'select * from auth_accounts where "userId" = $1',
         [userData.id]
       );
       return {
@@ -270,32 +270,43 @@ export const { auth } = CreateAuth({
       },
     },
     authorize: async (credentials) => {
+      console.log('[Auth] Starting authorization for:', credentials.email);
       const { email, password } = credentials;
       if (!email || !password) {
+        console.warn('[Auth] Missing email or password');
         return null;
       }
       if (typeof email !== 'string' || typeof password !== 'string') {
+        console.warn('[Auth] Invalid email or password type');
         return null;
       }
 
       // logic to verify if user exists
       const user = await adapter.getUserByEmail(email);
       if (!user) {
+        console.warn('[Auth] User not found during signin:', email);
         return null;
       }
       const matchingAccount = user.accounts.find(
         (account) => account.provider === 'credentials'
       );
+      if (!matchingAccount) {
+        console.warn('[Auth] No credentials account found for user:', email);
+        return null;
+      }
       const accountPassword = matchingAccount?.password;
       if (!accountPassword) {
+        console.warn('[Auth] No password set for user account:', email);
         return null;
       }
 
       const isValid = await verify(accountPassword, password);
       if (!isValid) {
+        console.warn('[Auth] Invalid password for user:', email);
         return null;
       }
 
+      console.log('[Auth] Authorization successful for:', email);
       // return user object with the their profile data
       return user;
     },
