@@ -103,7 +103,6 @@ if (process.env.AUTH_SECRET) {
           signIn: "/account/signin",
           signOut: "/account/logout",
         },
-        skipCSRFCheck,
         session: {
           strategy: "jwt",
         },
