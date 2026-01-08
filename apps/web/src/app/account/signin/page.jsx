@@ -1,13 +1,13 @@
 import { useState } from "react";
 import useAuth from "@/utils/useAuth";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 export default function SignInPage() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const { signInWithCredentials } = useAuth();
 
@@ -59,10 +59,10 @@ export default function SignInPage() {
         setError(errorMessage);
         setLoading(false);
       } else if (result?.url) {
-        router.push(result.url);
+        navigate(result.url);
       } else {
         // Fallback for success without URL
-        router.push("/");
+        navigate("/");
       }
     } catch (err) {
       console.error("Login error:", err);
