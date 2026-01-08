@@ -16,6 +16,12 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
+  const { data: authUser, loading: userLoading } = useUser();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loadingPatients, setLoadingPatients] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
