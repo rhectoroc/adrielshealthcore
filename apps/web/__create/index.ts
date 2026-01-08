@@ -150,32 +150,43 @@ if (process.env.AUTH_SECRET) {
               },
             },
             authorize: async (credentials) => {
+              console.log('[Auth] Starting authorization for:', credentials.email);
               const { email, password } = credentials;
               if (!email || !password) {
+                console.warn('[Auth] Missing email or password');
                 return null;
               }
               if (typeof email !== "string" || typeof password !== "string") {
+                console.warn('[Auth] Invalid email or password type');
                 return null;
               }
 
               // logic to verify if user exists
               const user = await adapter.getUserByEmail(email);
               if (!user) {
-                return null;
+                console.warn('[Auth] User not found during signin:', email);
+                throw new Error("UserNotFound");
               }
               const matchingAccount = user.accounts.find(
                 (account) => account.provider === "credentials",
               );
+              if (!matchingAccount) {
+                console.warn('[Auth] No credentials account found for user:', email);
+                throw new Error("AccountNotLinked");
+              }
               const accountPassword = matchingAccount?.password;
               if (!accountPassword) {
-                return null;
+                console.warn('[Auth] No password set for user account:', email);
+                throw new Error("NoPasswordSet");
               }
 
               const isValid = await verify(accountPassword, password);
               if (!isValid) {
-                return null;
+                console.warn('[Auth] Invalid password for user:', email);
+                throw new Error("InvalidPassword");
               }
 
+              console.log('[Auth] Authorization successful for:', email);
               // return user object with the their profile data
               return user;
             },
