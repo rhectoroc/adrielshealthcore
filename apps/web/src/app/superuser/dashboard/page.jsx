@@ -589,68 +589,6 @@ export default function SuperUserDashboard() {
                   </div>
                 </div>
               </div>
-
-              {/* Recent Activity */}
-              <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] dark:border-[#374151] p-6 shadow-sm">
-                <h2 className="font-poppins font-semibold text-xl text-[#1E2559] dark:text-white mb-4 flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-indigo-500" />
-                  Actividad Administrativa
-                </h2>
-                <div className="space-y-4">
-                  {stats.recentActivity.length > 0 ? (
-                    stats.recentActivity.map((log, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between py-2 border-b border-[#ECEFF9] dark:border-[#374151] last:border-0"
-                      >
-                        <div className="flex-1">
-                          <div className="font-inter text-sm text-[#1E2559] dark:text-white">
-                            <span className="font-semibold">
-                              {log.full_name || "Sistema"}
-                            </span>{" "}
-                            <span className="text-[#7B8198] dark:text-[#9CA3AF]">
-                              {log.action === "CREATE_USER" && `registró a ${getParsedDetails(log.details)?.targetName || "nuevo personal"}`}
-                              {log.action === "UPDATE_USER" && `actualizó perfil de ${getParsedDetails(log.details)?.targetName || "usuario"}`}
-                              {log.action === "DELETE_USER" && `eliminó cuenta de ${getParsedDetails(log.details)?.full_name || "usuario"}`}
-                              {log.action === "UPDATE_SETTINGS" && "cambió configuración global"}
-                            </span>
-                          </div>
-                          <div className="font-inter text-xs text-[#7B8198] dark:text-[#9CA3AF] mt-1">
-                            {new Date(log.created_at).toLocaleString("es-VE")}
-                          </div>
-                          {log.details && (
-                            <div className="mt-2 text-[10px] text-[#5C6178] border-l-2 border-indigo-200 pl-2 py-1">
-                              {(() => {
-                                const parsed = getParsedDetails(log.details) || {};
-                                const source = parsed.changes || parsed;
-                                return Object.entries(source).map(([key, val], i) => {
-                                  if (key === 'targetName') return null;
-                                  const isTransition = typeof val === 'object' && val !== null && 'old' in val;
-                                  const { label } = translateDetail(key, isTransition ? val.new : val);
-                                  if (val === null || val === "" || val === undefined) return null;
-                                  return (
-                                    <span key={key}>
-                                      {i > 0 && " • "}
-                                      {label}
-                                      {isTransition && (
-                                        <span className="opacity-70 italic ml-1">
-                                          ({renderValueText(key, val.old)} → {renderValueText(key, val.new)})
-                                        </span>
-                                      )}
-                                    </span>
-                                  );
-                                }).filter(Boolean);
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-[#7B8198] text-sm italic">No hay actividad reciente registrada.</p>
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
@@ -950,7 +888,7 @@ export default function SuperUserDashboard() {
 
           {activeTab === "logs" && (
             <div>
-              <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">Registro de Auditoría</h1>
+              <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">Registros de Actividad</h1>
               <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] p-6 shadow-sm">
                 <div className="space-y-4">
                   {logs.map((log, index) => (
