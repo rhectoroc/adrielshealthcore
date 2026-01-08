@@ -59,10 +59,10 @@ export default function SignInPage() {
         setError(errorMessage);
         setLoading(false);
       } else if (result?.url) {
-        navigate(result.url);
+        window.location.href = result.url;
       } else {
         // Fallback for success without URL
-        navigate("/");
+        window.location.href = "/";
       }
     } catch (err) {
       console.error("Login error:", err);
