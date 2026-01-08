@@ -16,12 +16,7 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
-  const { data: authUser, loading: userLoading } = useUser();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
-  const [patients, setPatients] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loadingPatients, setLoadingPatients] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -42,58 +37,33 @@ export default function HomePage() {
           if (!data.user) {
             console.log("No profile found, redirecting to onboarding...");
             window.location.href = "/onboarding";
+            return;
           }
+
+          setLoadingProfile(false);
+        } else {
+          // Handle fetch error
+          setLoadingProfile(false);
         }
       } catch (err) {
         console.error("Error fetching profile:", err);
+        setLoadingProfile(false);
       }
     };
 
     if (authUser && !userLoading) {
       fetchProfile();
+    } else if (!userLoading && !authUser) {
+      // If not logged in, let the next check handle redirect
+      setLoadingProfile(false);
     }
   }, [authUser, userLoading]);
 
-  useEffect(() => {
-    const fetchPatients = async () => {
-      setLoadingPatients(true);
-      try {
-        const url = searchTerm
-          ? `/api/patients?search=${encodeURIComponent(searchTerm)}`
-          : "/api/patients";
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          setPatients(data.patients || []);
-        }
-      } catch (err) {
-        console.error("Error fetching patients:", err);
-      } finally {
-        setLoadingPatients(false);
-      }
-    };
+  // ... (keeping other useEffects)
 
-    if (userProfile) {
-      fetchPatients();
-    }
-  }, [userProfile, searchTerm]);
+  // ... (keeping navItems)
 
-  const navItems = [
-    { icon: Home, label: "Dashboard", active: true, href: "/" },
-    { icon: Users, label: "Pacientes", active: false, href: "/patients" },
-    { icon: Calendar, label: "Citas", active: false, href: "/appointments" },
-    { icon: Clipboard, label: "Historias", active: false, href: "/records" },
-    { icon: FileText, label: "Documentos", active: false, href: "/documents" },
-    { icon: DollarSign, label: "Facturación", active: false, href: "/billing" },
-    {
-      icon: Settings,
-      label: "Configuración",
-      active: false,
-      href: "/settings",
-    },
-  ];
-
-  if (userLoading) {
+  if (userLoading || loadingProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F8FAFF] dark:bg-[#121212]">
         <div className="text-center">
