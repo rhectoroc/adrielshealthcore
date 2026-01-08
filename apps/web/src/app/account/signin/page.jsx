@@ -1,11 +1,13 @@
 import { useState } from "react";
 import useAuth from "@/utils/useAuth";
+import { useRouter } from "next/navigation";
 
 export default function SignInPage() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
 
   const { signInWithCredentials } = useAuth();
 
@@ -21,14 +23,50 @@ export default function SignInPage() {
     }
 
     try {
-      await signInWithCredentials({
+      const result = await signInWithCredentials({
         email,
         password,
         callbackUrl: "/",
-        redirect: true,
+        redirect: false,
       });
+
+      if (result?.error) {
+        let errorMessage = "Credenciales incorrectas. Verifique su email y contraseña.";
+
+        switch (result.error) {
+          case "UserNotFound":
+            errorMessage = "No existe una cuenta con este correo electrónico.";
+            break;
+          case "InvalidPassword":
+            errorMessage = "La contraseña es incorrecta.";
+            break;
+          case "AccountNotLinked":
+            errorMessage = "La cuenta no está vinculada con credenciales. Intente otro método.";
+            break;
+          case "NoPasswordSet":
+            errorMessage = "La cuenta no tiene contraseña configurada.";
+            break;
+        }
+
+        // Often the error comes as "Configuration" or generic if thrown from authorize in some setups,
+        // so we might need to inspect the URL or rely on the generic message if result.error is just "CredentialsSignin".
+        // However, for recent Auth.js, custom errors might be wrapped.
+
+        // If the error code matches what we threw:
+        if (result.error.includes("UserNotFound")) errorMessage = "No existe una cuenta con este correo electrónico.";
+        else if (result.error.includes("InvalidPassword")) errorMessage = "La contraseña es incorrecta.";
+
+        setError(errorMessage);
+        setLoading(false);
+      } else if (result?.url) {
+        router.push(result.url);
+      } else {
+        // Fallback for success without URL
+        router.push("/");
+      }
     } catch (err) {
-      setError("Credenciales incorrectas. Verifique su email y contraseña.");
+      console.error("Login error:", err);
+      setError("Ocurrió un error inesperado. Intente nuevamente.");
       setLoading(false);
     }
   };
@@ -104,9 +142,8 @@ export default function SignInPage() {
           <p className="text-center font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
             ¿No tiene una cuenta?{" "}
             <a
-              href={`/account/signup${
-                typeof window !== "undefined" ? window.location.search : ""
-              }`}
+              href={`/account/signup${typeof window !== "undefined" ? window.location.search : ""
+                }`}
               className="text-[#2E39C9] dark:text-[#6366F1] hover:text-[#1E2A99] dark:hover:text-[#4F46E5] font-medium"
             >
               Regístrese

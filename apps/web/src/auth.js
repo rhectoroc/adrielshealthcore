@@ -285,25 +285,25 @@ export const { auth } = CreateAuth({
       const user = await adapter.getUserByEmail(email);
       if (!user) {
         console.warn('[Auth] User not found during signin:', email);
-        return null;
+        throw new Error("UserNotFound");
       }
       const matchingAccount = user.accounts.find(
         (account) => account.provider === 'credentials'
       );
       if (!matchingAccount) {
         console.warn('[Auth] No credentials account found for user:', email);
-        return null;
+        throw new Error("AccountNotLinked");
       }
       const accountPassword = matchingAccount?.password;
       if (!accountPassword) {
         console.warn('[Auth] No password set for user account:', email);
-        return null;
+        throw new Error("NoPasswordSet");
       }
 
       const isValid = await verify(accountPassword, password);
       if (!isValid) {
         console.warn('[Auth] Invalid password for user:', email);
-        return null;
+        throw new Error("InvalidPassword");
       }
 
       console.log('[Auth] Authorization successful for:', email);
