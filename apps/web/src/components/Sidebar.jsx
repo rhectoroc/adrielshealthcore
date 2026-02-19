@@ -30,6 +30,7 @@ const Sidebar = ({ role, userProfile }) => {
 
     const superUserItems = [
         { icon: LayoutDashboard, label: "Dashboard Global", path: "/superuser/overview" },
+        { icon: Users, label: "Usuarios", path: "/superuser/users" },
         { icon: Users, label: "Gestión Médica", path: "/superuser/dashboard" },
         { icon: Activity, label: "Auditoría", path: "/superuser/audit" },
         { icon: Database, label: "Base de Datos", path: "/superuser/database" },

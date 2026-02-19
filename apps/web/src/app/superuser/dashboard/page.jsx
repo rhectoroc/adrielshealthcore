@@ -73,6 +73,12 @@ export default function SuperUserDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
+  // Filter out system users from the fetched list
+  const medicalUsers = users.filter(u => u.role === 'doctor' || u.role === 'nurse');
+  const filteredUsers = roleFilter === 'all'
+    ? medicalUsers
+    : medicalUsers.filter(u => u.role === roleFilter);
+
   const {
     isOpen: isCreateOpen,
     onOpen: onCreateOpen,
@@ -202,8 +208,8 @@ export default function SuperUserDashboard() {
     );
   }
 
-  const doctors = users.filter(u => u.role === 'doctor');
-  const staff = users.filter(u => u.role === 'nurse' || u.role === 'administrator');
+  const doctors = filteredUsers.filter(u => u.role === 'doctor');
+  const staff = filteredUsers.filter(u => u.role === 'nurse');
 
   return (
     <MainLayout allowedRoles={["superuser"]}>
@@ -258,7 +264,6 @@ export default function SuperUserDashboard() {
               >
                 <option value="doctor">Especialistas</option>
                 <option value="nurse">Asistentes</option>
-                <option value="administrator">Administradores</option>
               </Select>
             </Flex>
 
@@ -272,7 +277,7 @@ export default function SuperUserDashboard() {
                 </Tr>
               </Thead>
               <Tbody>
-                {users.map(user => (
+                {filteredUsers.map(user => (
                   <Tr key={user.id} _hover={{ bg: "gray.50" }} transition="0.2s">
                     <Td>
                       <HStack>
@@ -397,7 +402,6 @@ export default function SuperUserDashboard() {
                       >
                         <option value="doctor">Médico / Especialista</option>
                         <option value="nurse">Asistente de Consulta</option>
-                        <option value="administrator">Administrativo</option>
                       </Select>
                     </FormControl>
                   </HStack>
@@ -520,7 +524,7 @@ export default function SuperUserDashboard() {
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {users.filter(u => u.parent_doctor_id === selectedDoctor?.id).map(member => (
+                      {filteredUsers.filter(u => u.parent_doctor_id === selectedDoctor?.id).map(member => (
                         <Tr key={member.id}>
                           <Td py={4}>
                             <Text fontWeight="bold">{member.full_name}</Text>
@@ -528,7 +532,7 @@ export default function SuperUserDashboard() {
                           </Td>
                           <Td>
                             <Badge colorScheme="purple" variant="outline" fontSize="9px">
-                              {member.role === 'nurse' ? 'ASISTENTE' : 'ADMIN'}
+                              {member.role === 'nurse' ? 'ASISTENTE' : 'OTRO'}
                             </Badge>
                           </Td>
                           <Td>
