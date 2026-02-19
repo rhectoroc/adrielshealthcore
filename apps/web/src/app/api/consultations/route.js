@@ -40,6 +40,11 @@ export async function POST(request) {
       return Response.json({ error: "No tiene un equipo médico asignado o vinculado a un doctor" }, { status: 403 });
     }
 
+    // Seguridad: Solo los doctores pueden crear consultas
+    if (currentUser.role !== 'doctor' && currentUser.role !== 'superuser') {
+      return Response.json({ error: "Solo los médicos pueden registrar consultas y diagnósticos" }, { status: 403 });
+    }
+
     const body = await request.json();
 
     // Validar con Yup

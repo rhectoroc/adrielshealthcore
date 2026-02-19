@@ -46,9 +46,10 @@ CREATE TABLE IF NOT EXISTS users (
     full_name TEXT NOT NULL,
     mpps_number TEXT,
     colegio_number TEXT,
-    specialty TEXT,
+    specialty_id INTEGER REFERENCES specialties(id), -- Vincular a tabla de especialidades
     rif TEXT,
     is_verified BOOLEAN DEFAULT FALSE,
+    require_password_change BOOLEAN DEFAULT FALSE, -- Flag para obligar cambio de clave
     doctor_id UUID, -- For future linking if needed
     parent_doctor_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Link staff to a doctor
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

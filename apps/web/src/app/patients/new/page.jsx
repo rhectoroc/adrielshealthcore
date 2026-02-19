@@ -23,6 +23,16 @@ export default function NewPatientPage() {
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
+    const [userProfile, setUserProfile] = useState(null);
+
+    useState(() => {
+        fetch("/api/profile")
+            .then(res => res.json())
+            .then(data => setUserProfile(data.user));
+    }, []);
+
+    const isAssistant = userProfile?.role === 'nurse';
+    const isDoctor = userProfile?.role === 'doctor' || userProfile?.role === 'superuser';
 
     const onSubmit = async (data) => {
         setLoading(true);
@@ -114,19 +124,21 @@ export default function NewPatientPage() {
                                         </Select>
                                     </FormControl>
 
-                                    <FormControl>
-                                        <FormLabel>Tipo de Sangre</FormLabel>
-                                        <Select placeholder="Desconocido" {...register("bloodType")}>
-                                            <option value="A+">A+</option>
-                                            <option value="A-">A-</option>
-                                            <option value="B+">B+</option>
-                                            <option value="B-">B-</option>
-                                            <option value="AB+">AB+</option>
-                                            <option value="AB-">AB-</option>
-                                            <option value="O+">O+</option>
-                                            <option value="O-">O-</option>
-                                        </Select>
-                                    </FormControl>
+                                    {isDoctor && (
+                                        <FormControl>
+                                            <FormLabel>Tipo de Sangre</FormLabel>
+                                            <Select placeholder="Desconocido" {...register("bloodType")}>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                            </Select>
+                                        </FormControl>
+                                    )}
 
                                     <FormControl>
                                         <FormLabel>Teléfono</FormLabel>
@@ -134,13 +146,15 @@ export default function NewPatientPage() {
                                     </FormControl>
                                 </SimpleGrid>
 
-                                <FormControl>
-                                    <FormLabel>Alergias</FormLabel>
-                                    <Textarea
-                                        placeholder="Liste alergias conocidas, medicamentos u otros..."
-                                        {...register("allergies")}
-                                    />
-                                </FormControl>
+                                {isDoctor && (
+                                    <FormControl>
+                                        <FormLabel>Alergias / Antecedentes</FormLabel>
+                                        <Textarea
+                                            placeholder="Liste alergias conocidas, medicamentos u otros..."
+                                            {...register("allergies")}
+                                        />
+                                    </FormControl>
+                                )}
 
                                 <Divider />
 

@@ -1,5 +1,7 @@
 import sql from "@/app/api/utils/sql";
 import { auth } from "@/auth";
+import { hash } from "argon2";
+import crypto from "crypto";
 
 // Get all users (superuser only)
 export async function GET(request) {
@@ -29,23 +31,30 @@ export async function GET(request) {
     const role = searchParams.get("role");
     const search = searchParams.get("search");
 
-    let query = `SELECT id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, parent_doctor_id, created_at FROM users WHERE 1=1`;
+    let query = `
+      SELECT u.id, u.email, u.role, u.full_name, u.mpps_number, u.colegio_number, 
+             u.specialty_id, s.name as specialty_name, u.rif, u.is_verified, 
+             u.parent_doctor_id, u.created_at, u.require_password_change
+      FROM users u
+      LEFT JOIN specialties s ON u.specialty_id = s.id
+      WHERE 1=1
+    `;
     const values = [];
     let paramCount = 1;
 
     if (role && role !== "all") {
-      query += ` AND role = $${paramCount}`;
+      query += ` AND u.role = $${paramCount}`;
       values.push(role);
       paramCount++;
     }
 
     if (search && search.trim().length > 0) {
-      query += ` AND (LOWER(full_name) LIKE LOWER($${paramCount}) OR LOWER(email) LIKE LOWER($${paramCount}))`;
+      query += ` AND (LOWER(u.full_name) LIKE LOWER($${paramCount}) OR LOWER(u.email) LIKE LOWER($${paramCount}))`;
       values.push(`%${search}%`);
       paramCount++;
     }
 
-    query += ` ORDER BY created_at DESC`;
+    query += ` ORDER BY u.created_at DESC`;
 
     const users = await sql.unsafe(query, values);
 
@@ -68,14 +77,14 @@ export async function POST(request) {
     }
 
     // Verify user is superuser
-    const userRows = await sql`
+    const superUserCheck = await sql`
       SELECT role FROM users WHERE email = ${session.user.email} LIMIT 1
     `;
 
     if (
-      !userRows ||
-      userRows.length === 0 ||
-      userRows[0].role !== "superuser"
+      !superUserCheck ||
+      superUserCheck.length === 0 ||
+      superUserCheck[0].role !== "superuser"
     ) {
       return Response.json(
         { error: "Acceso denegado. Solo SuperUsuarios." },
@@ -84,7 +93,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { email, role, fullName, mppsNumber, colegioNumber, specialty, rif, parent_doctor_id } =
+    const { email, role, fullName, mppsNumber, colegioNumber, specialtyId, rif, parent_doctor_id } =
       body;
 
     if (!email || !role || !fullName) {
@@ -94,19 +103,7 @@ export async function POST(request) {
       );
     }
 
-    // Check if email already exists in auth_users
-    const existingAuthUser = await sql`
-      SELECT id FROM auth_users WHERE email = ${email} LIMIT 1
-    `;
-
-    if (existingAuthUser && existingAuthUser.length > 0) {
-      return Response.json(
-        { error: "Este email ya está registrado en el sistema" },
-        { status: 409 },
-      );
-    }
-
-    // Check if email already exists in users table
+    // Check if email already exists
     const existingUser = await sql`
       SELECT id FROM users WHERE email = ${email} LIMIT 1
     `;
@@ -118,20 +115,49 @@ export async function POST(request) {
       );
     }
 
+    // 1. Generar password temporal
+    const tempPassword = crypto.randomBytes(6).toString('hex'); // 12 chars
+    const hashedPassword = await hash(tempPassword);
+
+    // 2. Crear en auth_users (Auth.js)
+    const authUserResult = await sql`
+      INSERT INTO auth_users (name, email)
+      VALUES (${fullName}, ${email})
+      RETURNING id
+    `;
+    const authUserId = authUserResult[0].id;
+
+    // 3. Crear en auth_accounts (Auth.js - Credentials)
+    await sql`
+      INSERT INTO auth_accounts (
+        "userId", type, provider, "providerAccountId", password
+      )
+      VALUES (
+        ${authUserId}, 'credentials', 'credentials', ${authUserId}, ${hashedPassword}
+      )
+    `;
+
+    // 4. Crear en aplicación (users table)
     const result = await sql`
-      INSERT INTO users (email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, parent_doctor_id)
+      INSERT INTO users (
+        email, role, full_name, mpps_number, colegio_number, 
+        specialty_id, rif, is_verified, parent_doctor_id, 
+        require_password_change, doctor_id
+      )
       VALUES (
         ${email},
         ${role},
         ${fullName},
         ${mppsNumber || null},
         ${colegioNumber || null},
-        ${specialty || null},
+        ${specialtyId || null},
         ${rif || null},
-        ${false},
-        ${parent_doctor_id || null}
+        ${true}, -- Auto-verificar si lo crea el admin
+        ${parent_doctor_id || null},
+        ${true}, -- Marcar para cambio obligatorio
+        ${authUserId} -- Link UUID de Auth.js
       )
-      RETURNING id, email, role, full_name, mpps_number, colegio_number, specialty, rif, is_verified, parent_doctor_id, created_at
+      RETURNING id, email, role, full_name, mpps_number, colegio_number, specialty_id, rif, is_verified, parent_doctor_id, created_at
     `;
 
     const newUser = result?.[0] || null;
@@ -140,14 +166,22 @@ export async function POST(request) {
     const actorResult = await sql`SELECT id FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1`;
     const actorId = actorResult?.[0]?.id || null;
 
-    if (actorId) {
+    if (actorId && newUser) {
       await sql`
         INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-        VALUES (${actorId}, 'CREATE_USER', 'users', ${newUser.id}, ${{ email, role, fullName, targetName: fullName }})
+        VALUES (
+          ${actorId}, 'CREATE_USER', 'users', ${newUser.id}, 
+          ${JSON.stringify({ email, role, fullName, targetName: fullName, autoGenerated: true })}
+        )
       `;
     }
 
-    return Response.json({ user: newUser }, { status: 201 });
+    // Importante: Retornar el tempPassword para que el admin lo vea UNA VEZ
+    return Response.json({
+      user: newUser,
+      tempPassword
+    }, { status: 201 });
+
   } catch (err) {
     console.error("POST /api/superuser/users error:", err);
     return Response.json(

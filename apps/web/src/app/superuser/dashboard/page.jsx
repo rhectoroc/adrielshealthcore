@@ -1,51 +1,88 @@
 import { useState, useEffect } from "react";
 import useUser from "@/utils/useUser";
 import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  Input,
+  Select,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Badge,
+  IconButton,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  VStack,
+  HStack,
+  FormControl,
+  FormLabel,
+  useToast,
+  Spinner,
+  Avatar,
+  Divider,
+  Tag,
+  TagLabel,
+} from "@chakra-ui/react";
+import {
   Users,
   Shield,
   Activity,
   Database,
-  Calendar,
-  FileText,
-  UserPlus,
+  Lock,
+  Settings,
+  Plus,
   Search,
   Edit2,
   Trash2,
-  CheckCircle,
-  XCircle,
-  Menu,
-  X,
+  Eye,
   LogOut,
-  BarChart3,
-  Clock,
-  Settings,
-  Download,
-  Upload,
-  Globe,
-  Lock,
-  ShieldAlert,
+  ChevronRight,
+  UserPlus,
+  Key,
 } from "lucide-react";
 
 export default function SuperUserDashboard() {
   const { data: authUser, loading: userLoading } = useUser();
   const [userProfile, setUserProfile] = useState(null);
-  const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [specialties, setSpecialties] = useState([]);
+  const [activeTab, setActiveTab] = useState("users");
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [specialties, setSpecialties] = useState([]);
-  const [systemSettings, setSystemSettings] = useState({
-    language: "es",
-    date_format: "MM/DD/YYYY",
-    timezone: "America/Caracas"
-  });
-  const [backupLoading, setBackupLoading] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+
+  const {
+    isOpen: isCreateOpen,
+    onOpen: onCreateOpen,
+    onClose: onCreateClose
+  } = useDisclosure();
+
+  const {
+    isOpen: isDetailOpen,
+    onOpen: onDetailOpen,
+    onClose: onDetailClose
+  } = useDisclosure();
+
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [tempPassword, setTempPassword] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const toast = useToast();
 
   const [newUser, setNewUser] = useState({
     email: "",
@@ -53,1075 +90,524 @@ export default function SuperUserDashboard() {
     fullName: "",
     mppsNumber: "",
     colegioNumber: "",
-    specialty: "",
+    specialtyId: "",
     rif: "",
     parent_doctor_id: ""
   });
 
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: ""
-  });
-  const [passwordLoading, setPasswordLoading] = useState(false);
-
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const data = await res.json();
+    if (authUser) {
+      fetch("/api/profile")
+        .then(res => res.json())
+        .then(data => {
           setUserProfile(data.user);
-
-          if (!data.user || data.user.role !== "superuser") {
-            window.location.href = "/";
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching profile:", err);
-      }
-    };
-
-    if (authUser && !userLoading) {
-      fetchProfile();
+          if (data.user?.role !== "superuser") window.location.href = "/";
+        });
     }
-  }, [authUser, userLoading]);
+  }, [authUser]);
 
   useEffect(() => {
     if (userProfile?.role === "superuser") {
-      fetchStats();
       fetchUsers();
-      fetchLogs();
       fetchSpecialties();
-      fetchSettings();
     }
-  }, [userProfile]);
-
-  const fetchStats = async () => {
-    try {
-      const res = await fetch("/api/superuser/stats");
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-      }
-    } catch (err) {
-      console.error("Error fetching stats:", err);
-    }
-  };
+  }, [userProfile, searchTerm, roleFilter]);
 
   const fetchUsers = async () => {
-    try {
-      // Modify URL to fetch all if in maintenance or security, but we filter client side for now or could add API filter
-      const url = `/api/superuser/users?role=${roleFilter === 'all' ? '' : roleFilter}${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ""}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data.users || []);
-      }
-    } catch (err) {
-      console.error("Error fetching users:", err);
-    }
-  };
-
-  const fetchLogs = async () => {
-    try {
-      const res = await fetch("/api/superuser/logs?limit=50");
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.logs || []);
-      }
-    } catch (err) {
-      console.error("Error fetching logs:", err);
-    }
+    const url = `/api/superuser/users?role=${roleFilter === 'all' ? '' : roleFilter}&search=${encodeURIComponent(searchTerm)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    setUsers(data.users || []);
   };
 
   const fetchSpecialties = async () => {
-    try {
-      const res = await fetch("/api/specialties");
-      if (res.ok) {
-        const data = await res.json();
-        setSpecialties(data.specialties || []);
-      }
-    } catch (err) {
-      console.error("Error fetching specialties:", err);
-    }
+    const res = await fetch("/api/specialties");
+    const data = await res.json();
+    setSpecialties(data.specialties || []);
   };
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch("/api/superuser/settings");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.settings) setSystemSettings(data.settings);
-      }
-    } catch (err) {
-      console.error("Error fetching settings:", err);
-    }
-  };
-
-  const updateSetting = async (key, value) => {
-    try {
-      const res = await fetch("/api/superuser/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, value })
-      });
-      if (res.ok) {
-        setSystemSettings(prev => ({ ...prev, [key]: value }));
-      }
-    } catch (err) {
-      console.error("Error updating setting:", err);
-    }
-  };
-
-  const handleBackup = async () => {
-    setBackupLoading(true);
-    try {
-      const res = await fetch("/api/superuser/backup");
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      }
-    } catch (err) {
-      console.error("Error backup:", err);
-      alert("Error al generar backup");
-    } finally {
-      setBackupLoading(false);
-    }
-  };
-
-  const handleRestore = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const data = JSON.parse(event.target.result);
-        const res = await fetch("/api/superuser/backup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data })
-        });
-        if (res.ok) {
-          alert("Base de datos restaurada con éxito");
-          window.location.reload();
-        } else {
-          alert("Error al restaurar");
-        }
-      } catch (err) {
-        console.error("Restore error:", err);
-        alert("Archivo inválido");
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("Las contraseñas no coinciden");
-      return;
-    }
-    setPasswordLoading(true);
-    try {
-      const res = await fetch("/api/superuser/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("Contraseña actualizada exitosamente");
-        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      } else {
-        alert(data.error || "Error al cambiar contraseña");
-      }
-    } catch (err) {
-      console.error("Error changing password:", err);
-      alert("Ocurrió un error inesperado");
-    } finally {
-      setPasswordLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (userProfile?.role === "superuser") {
-      fetchUsers();
-    }
-  }, [searchTerm, roleFilter, userProfile]);
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/superuser/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
       });
-
+      const data = await res.json();
       if (res.ok) {
-        setShowCreateModal(false);
-        setNewUser({
-          email: "",
-          role: "doctor",
-          fullName: "",
-          mppsNumber: "",
-          colegioNumber: "",
-          specialty: "",
-          rif: "",
-          parent_doctor_id: ""
+        setTempPassword(data.tempPassword);
+        toast({
+          title: "Usuario creado",
+          description: "Se ha generado una clave temporal.",
+          status: "success",
+          duration: 5000,
         });
         fetchUsers();
-        fetchStats();
+        // No cerramos el modal si hay tempPassword para que el admin la vea
       } else {
-        const data = await res.json();
-        alert(data.error || "Error al crear usuario");
+        toast({ title: "Error", description: data.error, status: "error" });
       }
     } catch (err) {
-      console.error("Error creating user:", err);
-      alert("Error al crear usuario");
+      toast({ title: "Error", description: "Fallo de red", status: "error" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleEditClick = (user) => {
-    setEditingUser(user);
-    setNewUser({
-      email: user.email,
-      role: user.role,
-      fullName: user.full_name,
-      mppsNumber: user.mpps_number || "",
-      colegioNumber: user.colegio_number || "",
-      specialty: user.specialty || "",
-      rif: user.rif || "",
-      parent_doctor_id: user.parent_doctor_id || ""
-    });
-    setShowEditModal(true);
+  const handleOpenTeam = (doctor) => {
+    setSelectedDoctor(doctor);
+    onDetailOpen();
   };
 
-  const handleUpdateUser = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`/api/superuser/users/${editingUser.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
-      });
+  const handleResetPassword = async (assistantId) => {
+    if (!confirm("¿Está seguro de resetear la contraseña de este asistente? Se generará una clave temporal.")) return;
 
+    try {
+      const res = await fetch("/api/superuser/users/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assistantId }),
+      });
+      const data = await res.json();
       if (res.ok) {
-        setShowEditModal(false);
-        setEditingUser(null);
-        setNewUser({
-          email: "",
-          role: "doctor",
-          fullName: "",
-          mppsNumber: "",
-          colegioNumber: "",
-          specialty: "",
-          rif: "",
-          parent_doctor_id: ""
+        setTempPassword(data.tempPassword);
+        toast({
+          title: "Contraseña Reseteada",
+          description: "Se ha generado una nueva clave temporal.",
+          status: "success",
+          duration: 5000,
         });
-        fetchUsers();
-        fetchStats();
+        // Si el modal de detalle está abierto, podemos mostrar la clave allí o usar una variable global
       } else {
-        const data = await res.json();
-        alert(data.error || "Error al actualizar usuario");
+        toast({ title: "Error", description: data.error, status: "error" });
       }
     } catch (err) {
-      console.error("Error updating user:", err);
-      alert("Error al actualizar usuario");
-    }
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (!confirm("¿Está seguro de eliminar este usuario?")) return;
-
-    try {
-      const res = await fetch(`/api/superuser/users/${userId}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        fetchUsers();
-        fetchStats();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Error al eliminar usuario");
-      }
-    } catch (err) {
-      console.error("Error deleting user:", err);
-      alert("Error al eliminar usuario");
-    }
-  };
-
-  const handleVerifyUser = async (userId, isVerified) => {
-    try {
-      const res = await fetch(`/api/superuser/users/${userId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isVerified: !isVerified }),
-      });
-
-      if (res.ok) {
-        fetchUsers();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Error al actualizar usuario");
-      }
-    } catch (err) {
-      console.error("Error updating user:", err);
-      alert("Error al actualizar usuario");
+      toast({ title: "Error", description: "Fallo de red", status: "error" });
     }
   };
 
   if (userLoading || !userProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFF] dark:bg-[#121212]">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#2E39C9] dark:border-[#4F46E5] border-r-transparent"></div>
-          <p className="mt-4 font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
-            Cargando...
-          </p>
-        </div>
-      </div>
+      <Flex h="100vh" align="center" justify="center" bg="gray.50">
+        <Spinner size="xl" color="blue.500" thickness="4px" />
+      </Flex>
     );
   }
 
-  const translateDetail = (key, value) => {
-    const labels = {
-      fullName: "Nombre",
-      email: "Email",
-      role: "Rol",
-      mppsNumber: "MPPS",
-      colegioNumber: "Colegio",
-      specialty: "Especialidad",
-      rif: "RIF",
-      parent_doctor_id: "Médico Asignado",
-      isVerified: "Verificado"
-    };
-
-    const roleLabels = {
-      doctor: "Médico",
-      nurse: "Enfermería/Soporte",
-      administrator: "Administrativo",
-      superuser: "SuperUsuario"
-    };
-
-    let displayValue = value;
-    if (key === 'role') displayValue = roleLabels[value] || value;
-    if (key === 'isVerified') displayValue = value ? "Sí" : "No";
-
-    return { label: labels[key] || key, value: String(displayValue) };
-  };
-
-  const renderValueText = (key, value) => {
-    const { value: displayValue } = translateDetail(key, value);
-    return displayValue;
-  };
-
-  const getParsedDetails = (details) => {
-    if (!details) return null;
-    if (typeof details === 'object') return details;
-    try {
-      const parsed = JSON.parse(details);
-      return typeof parsed === 'object' ? parsed : null;
-    } catch (e) {
-      return null;
-    }
-  };
-
-  const navItems = [
-    { id: "dashboard", icon: BarChart3, label: "Dashboard" },
-    { id: "users", icon: Users, label: "Personal Médico" },
-    { id: "security", icon: Lock, label: "Seguridad y Accesos" },
-    { id: "logs", icon: Activity, label: "Auditoría" },
-    { id: "database", icon: Database, label: "Base de Datos" },
-    { id: "settings", icon: Settings, label: "Configuración" },
-  ];
-
   const doctors = users.filter(u => u.role === 'doctor');
-  const supportUsers = users.filter(u => u.role === 'administrator' || u.role === 'superuser');
-  const medicalStaff = users.filter(u => u.role === 'doctor' || u.role === 'nurse');
+  const staff = users.filter(u => u.role === 'nurse' || u.role === 'administrator');
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] dark:bg-[#121212]">
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed left-0 top-0 h-full w-[280px] sm:w-[220px] bg-gradient-to-b from-[#2E39C9] to-[#1E2A99] dark:from-[#1F2937] dark:to-[#111827] z-50 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+    <Flex minH="100vh" bg="#F8FAFF">
+      {/* Sidebar - Personalizado con el Azul del sistema */}
+      <Box
+        w="260px"
+        bgGradient="linear(to-b, #2E39C9, #1E2A99)"
+        color="white"
+        p={6}
+        display={{ base: "none", lg: "block" }}
       >
-        <div className="flex items-center px-6 py-6">
-          <Shield className="w-8 h-8 mr-3 text-white" />
-          <div>
-            <span className="text-white font-poppins font-bold text-lg block">
-              SuperUsuario
-            </span>
-            <span className="text-white text-opacity-60 font-inter text-xs">
-              Adm. del Sistema
-            </span>
-          </div>
-        </div>
+        <Flex align="center" mb={10}>
+          <Shield size={32} />
+          <VStack align="start" spacing={0} ml={3}>
+            <Text fontWeight="bold" fontSize="lg">HealthCore</Text>
+            <Text fontSize="xs" opacity={0.7}>Administración</Text>
+          </VStack>
+        </Flex>
 
-        <nav className="px-4 mt-4">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id);
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center px-4 py-3 mb-1 rounded-lg transition-all duration-200 ${activeTab === item.id
-                ? "bg-white dark:bg-[#374151] text-[#2E39C9] dark:text-white shadow-lg"
-                : "text-white text-opacity-70 hover:text-opacity-100 hover:bg-white hover:bg-opacity-10"
-                }`}
-            >
-              <item.icon size={18} className="mr-3" />
-              <span className="font-inter text-sm">{item.label}</span>
-            </button>
-          ))}
-        </nav>
+        <VStack align="stretch" spacing={2}>
+          <NavItem icon={Users} label="Gestión Médica" active={activeTab === "users"} onClick={() => setActiveTab("users")} />
+          <NavItem icon={Activity} label="Auditoría" active={activeTab === "logs"} onClick={() => setActiveTab("logs")} />
+          <NavItem icon={Database} label="Base de Datos" active={activeTab === "db"} onClick={() => setActiveTab("db")} />
+          <NavItem icon={Settings} label="Configuración" active={activeTab === "settings"} onClick={() => setActiveTab("settings")} />
+        </VStack>
 
-        <div className="absolute bottom-6 left-4 right-4">
-          <a
-            href="/account/logout"
-            className="w-full flex items-center px-4 py-3 rounded-lg text-white text-opacity-70 hover:text-opacity-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200"
+        <Box mt="auto" pt={10}>
+          <Button
+            leftIcon={<LogOut size={18} />}
+            variant="ghost"
+            colorScheme="whiteAlpha"
+            w="full"
+            justifyContent="start"
+            onClick={() => window.location.href = "/account/logout"}
           >
-            <LogOut size={18} className="mr-3" />
-            <span className="font-inter text-sm">Cerrar Sesión</span>
-          </a>
-        </div>
+            Cerrar Sesión
+          </Button>
+        </Box>
+      </Box>
 
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="absolute top-6 right-4 text-white lg:hidden p-1 rounded hover:bg-white hover:bg-opacity-20"
-        >
-          <X size={24} />
-        </button>
-      </div>
-
-      {/* Main Content */}
-      <div className="lg:ml-[220px] min-h-screen">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-white dark:bg-[#1E1E1E] border-b border-[#ECEFF9] dark:border-[#374151] flex items-center justify-between px-4 sm:px-6 py-4">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="text-[#1E2559] dark:text-white lg:hidden p-2 rounded hover:bg-[#F0F2FF] dark:hover:bg-[#374151]"
+      {/* Content */}
+      <Box flex={1} p={{ base: 4, md: 8 }} overflowY="auto">
+        <Flex justify="space-between" align="center" mb={8}>
+          <Box>
+            <Heading size="lg" color="#1E2559">Gestión de Unidades Médicas</Heading>
+            <Text color="gray.500">Panel de control de especialistas y equipos</Text>
+          </Box>
+          <Button
+            leftIcon={<UserPlus size={20} />}
+            bg="#2E39C9"
+            color="white"
+            _hover={{ bg: "#1E2A99" }}
+            size="lg"
+            onClick={() => {
+              setTempPassword(null);
+              setNewUser({ email: "", role: "doctor", fullName: "", mppsNumber: "", colegioNumber: "", specialtyId: "", rif: "" });
+              onCreateOpen();
+            }}
           >
-            <Menu size={24} />
-          </button>
+            Nuevo Médico
+          </Button>
+        </Flex>
 
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-poppins font-semibold text-sm text-[#1E2559] dark:text-white">
-                {userProfile?.full_name || "Admin"}
-              </div>
-              <div className="font-inter text-xs text-[#7B8198] dark:text-[#9CA3AF]">
-                Sistema General
-              </div>
-            </div>
-          </div>
-        </header>
+        {activeTab === "users" && (
+          <Box bg="white" borderRadius="2xl" shadow="sm" p={6} border="1px solid" borderColor="gray.100">
+            <Flex mb={6} gap={4}>
+              <Box position="relative" flex={1}>
+                <Input
+                  placeholder="Buscar especialistas por nombre o email..."
+                  pl={10}
+                  bg="gray.50"
+                  border="none"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400">
+                  <Search size={18} />
+                </Box>
+              </Box>
+              <Select w="200px" bg="gray.50" border="none" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                <option value="all">Todos los Roles</option>
+                <option value="doctor">Especialistas</option>
+                <option value="nurse">Asistentes</option>
+                <option value="administrator">Administradores</option>
+              </Select>
+            </Flex>
 
-        {/* Content */}
-        <div className="px-4 sm:px-6 py-6">
-          {activeTab === "dashboard" && stats && (
-            <div>
-              <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">
-                Resumen del Sistema
-              </h1>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] dark:border-[#374151] p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <Users className="w-10 h-10 text-blue-500" />
-                    <span className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white">
-                      {stats.totalUsers}
-                    </span>
-                  </div>
-                  <h3 className="font-inter font-medium text-sm text-[#7B8198] dark:text-[#9CA3AF]">
-                    Total Personal
-                  </h3>
-                </div>
-
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4">
-                  <div className="font-poppins font-bold text-2xl text-blue-700 dark:text-blue-300 mb-1">
-                    {stats.users.doctor}
-                  </div>
-                  <div className="font-inter text-sm text-blue-600 dark:text-blue-400">
-                    Médicos
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-800 p-4">
-                  <div className="font-poppins font-bold text-2xl text-green-700 dark:text-green-300 mb-1">
-                    {stats.users.nurse}
-                  </div>
-                  <div className="font-inter text-sm text-green-600 dark:text-green-400">
-                    Equipo Soporte
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl border border-orange-200 dark:border-orange-800 p-4">
-                  <div className="font-poppins font-bold text-2xl text-orange-700 dark:text-orange-300 mb-1">
-                    {stats.users.superuser}
-                  </div>
-                  <div className="font-inter text-sm text-orange-600 dark:text-orange-400">
-                    Administradores
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "users" && (
-            <div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
-                <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white">
-                  Personal Médico
-                </h1>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-[#2E39C9] dark:bg-[#4F46E5] text-white rounded-lg font-inter font-medium text-sm hover:bg-[#1E2A99] dark:hover:bg-[#4338CA] shadow-md transition-all"
-                >
-                  <UserPlus size={18} />
-                  <span>Nuevo Médico/Enfermero</span>
-                </button>
-              </div>
-
-              <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] dark:border-[#374151] p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mb-6">
-                  <div className="relative flex-1">
-                    <Search
-                      size={20}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7B8198] dark:text-[#9CA3AF]"
-                    />
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Buscar por nombre o email..."
-                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-[#ECEFF9] dark:border-[#374151] bg-white dark:bg-[#262626] font-inter text-sm"
-                    />
-                  </div>
-                  <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="px-4 py-2 rounded-lg border border-[#ECEFF9] dark:border-[#374151] bg-white dark:bg-[#262626] font-inter text-sm"
-                  >
-                    <option value="all">Todos</option>
-                    <option value="doctor">Médicos</option>
-                    <option value="nurse">Enfermería</option>
-                  </select>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#ECEFF9] dark:border-[#374151]">
-                        <th className="text-left font-poppins font-semibold text-sm text-[#1E2559] dark:text-white py-3 px-4">Personal</th>
-                        <th className="text-left font-poppins font-semibold text-sm text-[#1E2559] dark:text-white py-3 px-4">Rol</th>
-                        <th className="text-left font-poppins font-semibold text-sm text-[#1E2559] dark:text-white py-3 px-4">Especialidad / Equipo</th>
-                        <th className="text-right font-poppins font-semibold text-sm text-[#1E2559] dark:text-white py-3 px-4">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {medicalStaff.map((user) => (
-                        <tr
-                          key={user.id}
-                          className="border-b border-[#ECEFF9] dark:border-[#374151] hover:bg-[#F9FAFF] dark:hover:bg-[#2D2D2D] transition-colors"
-                        >
-                          <td className="py-3 px-4">
-                            <div>
-                              <div className="font-inter font-medium text-sm text-[#1E2559] dark:text-white">{user.full_name}</div>
-                              <div className="font-inter text-xs text-[#7B8198] dark:text-[#9CA3AF]">{user.email}</div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${user.role === 'doctor' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                              }`}>
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            {user.role === 'doctor' ? (
-                              <div className="text-xs font-medium text-indigo-600 flex items-center">
-                                <Search size={12} className="mr-1" /> Ver equipo asignado
-                              </div>
-                            ) : (
-                              <div className="text-xs text-[#7B8198]">
-                                Asignado a: <span className="text-blue-600">{doctors.find(d => d.id === user.parent_doctor_id)?.full_name || 'Sin asignar'}</span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end space-x-1">
-                              <button onClick={() => handleEditClick(user)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
-                                <Edit2 size={16} />
-                              </button>
-                              <button onClick={() => handleDeleteUser(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "security" && (
-            <div className="space-y-8">
-              <div>
-                <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">Seguridad y Accesos</h1>
-
-                <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] dark:border-[#374151] p-6 shadow-sm mb-8 max-w-2xl">
-                  <h2 className="font-poppins font-semibold text-xl text-[#1E2559] dark:text-white mb-4 flex items-center">
-                    <Lock className="w-5 h-5 mr-2 text-indigo-500" />
-                    Cambiar Contraseña
-                  </h2>
-                  <form onSubmit={handlePasswordChange} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña Actual</label>
-                      <input
-                        type="password"
-                        required
-                        value={passwordData.currentPassword}
-                        onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nueva Contraseña</label>
-                        <input
-                          type="password"
-                          required
-                          minLength={6}
-                          value={passwordData.newPassword}
-                          onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmar Contraseña</label>
-                        <input
-                          type="password"
-                          required
-                          minLength={6}
-                          value={passwordData.confirmPassword}
-                          onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={passwordLoading}
-                      className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition disabled:opacity-50"
-                    >
-                      {passwordLoading ? "Actualizando..." : "Actualizar Contraseña"}
-                    </button>
-                  </form>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-                  <h2 className="font-poppins font-semibold text-xl text-[#1E2559] dark:text-white flex items-center">
-                    <ShieldAlert className="w-5 h-5 mr-2 text-orange-500" />
-                    Gestión de Soporte y Administradores
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setNewUser({ ...newUser, role: 'administrator' });
-                      setShowCreateModal(true);
-                    }}
-                    className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg font-inter font-medium text-sm hover:bg-orange-600 shadow-md transition-all"
-                  >
-                    <UserPlus size={18} />
-                    <span>Nuevo Administrador</span>
-                  </button>
-                </div>
-
-                <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] dark:border-[#374151] p-6 shadow-sm overflow-hidden">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#ECEFF9] dark:border-[#374151]">
-                        <th className="text-left py-3 px-4 font-semibold text-sm">Usuario</th>
-                        <th className="text-left py-3 px-4 font-semibold text-sm">Rol</th>
-                        <th className="text-right py-3 px-4 font-semibold text-sm">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {supportUsers.map(user => (
-                        <tr key={user.id} className="border-b border-[#ECEFF9] dark:border-[#374151] last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <td className="py-3 px-4">
-                            <div className="font-medium">{user.full_name}</div>
-                            <div className="text-xs text-gray-500">{user.email}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.role === 'superuser' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'}`}>
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button onClick={() => handleEditClick(user)} className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                                <Edit2 size={16} />
-                              </button>
-                              {user.id !== authUser.id && (
-                                <button onClick={() => handleDeleteUser(user.id)} className="p-1 text-red-600 hover:bg-red-50 rounded">
-                                  <Trash2 size={16} />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {supportUsers.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="text-center py-4 text-gray-500">No hay usuarios de soporte adicionales.</td>
-                        </tr>
+            <Table variant="simple">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th color="gray.400">Especialista</Th>
+                  <Th color="gray.400">Rol</Th>
+                  <Th color="gray.400">Especialidad / MPPS</Th>
+                  <Th color="gray.400" textAlign="right">Acciones</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {users.map(user => (
+                  <Tr key={user.id} _hover={{ bg: "gray.50" }} transition="0.2s">
+                    <Td>
+                      <HStack>
+                        <Avatar size="sm" name={user.full_name} bg="blue.500" />
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="bold" color="#1E2559">{user.full_name}</Text>
+                          <Text fontSize="xs" color="gray.500">{user.email}</Text>
+                        </VStack>
+                      </HStack>
+                    </Td>
+                    <Td>
+                      <Badge
+                        px={2} py={1} borderRadius="lg"
+                        colorScheme={user.role === 'doctor' ? 'blue' : 'green'}
+                        variant="subtle"
+                      >
+                        {user.role}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      {user.role === 'doctor' ? (
+                        <VStack align="start" spacing={0}>
+                          <Text fontSize="sm" fontWeight="medium">{user.specialty_name || 'Gral.'}</Text>
+                          <Text fontSize="xs" color="gray.400">MPPS: {user.mpps_number || '-'}</Text>
+                        </VStack>
+                      ) : (
+                        <Text fontSize="sm" color="gray.500">Miembro de Equipo</Text>
                       )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+                    </Td>
+                    <Td textAlign="right">
+                      <HStack justify="end" spacing={2}>
+                        {user.role === 'doctor' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            colorScheme="indigo"
+                            leftIcon={<Users size={14} />}
+                            onClick={() => handleOpenTeam(user)}
+                          >
+                            Ver equipo
+                          </Button>
+                        )}
+                        <IconButton aria-label="Edit" icon={<Edit2 size={16} />} size="sm" variant="ghost" colorScheme="blue" />
+                        <IconButton aria-label="Delete" icon={<Trash2 size={16} />} size="sm" variant="ghost" colorScheme="red" />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
+      </Box>
 
-          {activeTab === "database" && (
-            <div className="max-w-4xl mx-auto">
-              <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">Mantenimiento de Datos</h1>
+      {/* Modal Crear Usuario */}
+      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl">
+        <ModalOverlay backdropFilter="blur(4px)" />
+        <ModalContent borderRadius="2xl" p={4}>
+          <ModalHeader>
+            <Heading size="md" color="#1E2559">
+              {tempPassword ? "¡Acceso Generado!" : "Registro de Personal"}
+            </Heading>
+          </ModalHeader>
+          <ModalCloseButton />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-[#1E1E1E] p-8 rounded-2xl border border-[#ECEFF9] shadow-sm flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                    <Download className="text-blue-600" size={32} />
-                  </div>
-                  <h3 className="font-poppins font-bold text-lg mb-2">Respaldar Sistema</h3>
-                  <p className="text-sm text-[#7B8198] mb-6">Descarga un archivo JSON con toda la información de usuarios, especialidades y configuraciones.</p>
-                  <button
-                    onClick={handleBackup}
-                    disabled={backupLoading}
-                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
-                  >
-                    {backupLoading ? "Generando..." : "Descargar Backup"}
-                  </button>
-                </div>
+          <ModalBody>
+            {tempPassword ? (
+              <VStack spacing={6} py={6}>
+                <Box bg="green.50" p={6} borderRadius="xl" border="1px solid" borderColor="green.100" w="full">
+                  <VStack spacing={4}>
+                    <Box bg="white" p={3} borderRadius="full">
+                      <Key size={32} color="#48BB78" />
+                    </Box>
+                    <Text textAlign="center" color="green.700" fontWeight="medium">
+                      El usuario ha sido creado con éxito. Copia la siguiente contraseña temporal para entregársela. Solo podrá verla esta vez.
+                    </Text>
+                    <HStack bg="white" p={4} borderRadius="lg" border="1px dashed" borderColor="green.300" w="full" justify="center">
+                      <Text fontSize="2xl" fontWeight="bold" letterSpacing="widest" color="green.800">{tempPassword}</Text>
+                    </HStack>
+                  </VStack>
+                </Box>
+                <Button colorScheme="green" w="full" size="lg" onClick={onCreateClose}>
+                  Entendido, ya la copié
+                </Button>
+              </VStack>
+            ) : (
+              <form onSubmit={handleCreateUser}>
+                <VStack spacing={5}>
+                  <FormControl isRequired>
+                    <FormLabel fontSize="sm" color="gray.600">Nombre Completo</FormLabel>
+                    <Input
+                      placeholder="Ej. Dr. Andrés Moreno"
+                      bg="gray.50" borderRadius="lg"
+                      value={newUser.fullName}
+                      onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
+                    />
+                  </FormControl>
 
-                <div className="bg-white dark:bg-[#1E1E1E] p-8 rounded-2xl border border-[#ECEFF9] shadow-sm flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-                    <Upload className="text-orange-600" size={32} />
-                  </div>
-                  <h3 className="font-poppins font-bold text-lg mb-2">Restaurar Sistema</h3>
-                  <p className="text-sm text-[#7B8198] mb-6">Carga un archivo de respaldo previo para restaurar el estado del sistema. Esto sobrescribirá datos actuales.</p>
-                  <label className="w-full py-3 border-2 border-dashed border-orange-300 text-orange-600 rounded-xl font-bold hover:bg-orange-50 transition cursor-pointer text-center">
-                    Subir Archivo
-                    <input type="file" className="hidden" accept=".json" onChange={handleRestore} />
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
+                  <HStack w="full" gap={4}>
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm" color="gray.600">Email Corporativo</FormLabel>
+                      <Input
+                        placeholder="email@clinica.com"
+                        type="email" bg="gray.50"
+                        borderRadius="lg"
+                        value={newUser.email}
+                        onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                      />
+                    </FormControl>
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm" color="gray.600">Rol</FormLabel>
+                      <Select
+                        bg="gray.50" borderRadius="lg"
+                        value={newUser.role}
+                        onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                      >
+                        <option value="doctor">Médico / Especialista</option>
+                        <option value="nurse">Asistente de Consulta</option>
+                        <option value="administrator">Administrativo</option>
+                      </Select>
+                    </FormControl>
+                  </HStack>
 
-          {activeTab === "settings" && (
-            <div className="max-w-xl">
-              <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">Preferencias Globales</h1>
-
-              <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] p-6 shadow-sm space-y-6">
-                <div>
-                  <label className="flex items-center text-sm font-bold text-[#1E2559] mb-3">
-                    <Globe size={18} className="mr-2 text-blue-500" /> Idioma Predeterminado
-                  </label>
-                  <select
-                    value={systemSettings.language}
-                    onChange={(e) => updateSetting('language', e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="es">Español (Castellano)</option>
-                    <option value="en">English (US)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="flex items-center text-sm font-bold text-[#1E2559] mb-3">
-                    <Calendar size={18} className="mr-2 text-green-500" /> Formato de Fecha
-                  </label>
-                  <select
-                    value={systemSettings.date_format}
-                    onChange={(e) => updateSetting('date_format', e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="MM/DD/YYYY">MM / DD / YYYY (Estándar)</option>
-                    <option value="DD/MM/YYYY">DD / MM / YYYY (Europeo)</option>
-                    <option value="YYYY-MM-DD">YYYY - MM - DD (ISO)</option>
-                  </select>
-                </div>
-
-                <div className="pt-4 border-t border-gray-100 flex items-center text-xs text-gray-400 italic">
-                  <Clock size={12} className="mr-1" /> Último cambio: {new Date().toLocaleDateString()}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "logs" && (
-            <div>
-              <h1 className="font-poppins font-bold text-3xl text-[#1E2559] dark:text-white mb-6">Registros de Actividad</h1>
-              <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#ECEFF9] p-6 shadow-sm">
-                <div className="space-y-6">
-                  {logs.map((log, index) => {
-                    const parsedDetails = getParsedDetails(log.details) || {};
-                    const source = parsedDetails.changes || parsedDetails;
-                    const isUpdate = !!parsedDetails.changes;
-
-                    const translateAction = (action) => {
-                      const map = {
-                        "CREATE_USER": "Creación de Usuario",
-                        "UPDATE_USER": "Actualización de Usuario",
-                        "DELETE_USER": "Eliminación de Usuario",
-                        "UPDATE_SETTINGS": "Configuración del Sistema",
-                        "LOGIN": "Inicio de Sesión"
-                      };
-                      return map[action] || action;
-                    };
-
-                    const formatTime = (dateStr) => {
-                      return new Date(dateStr).toLocaleString("es-VE", {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit', hour12: true
-                      });
-                    };
-
-                    return (
-                      <div key={index} className="flex items-start space-x-4 pb-6 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
-                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                          <Activity size={18} className="text-indigo-600 dark:text-indigo-400" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                            <div>
-                              <p className="text-sm font-bold text-[#1E2559] dark:text-white">
-                                {translateAction(log.action)}
-                              </p>
-                              <p className="text-xs text-gray-500 mb-2">
-                                Realizado por: <span className="font-medium text-gray-700 dark:text-gray-300">{log.full_name}</span>
-                                <span className="opacity-70 px-1">[{translateDetail('role', log.role).value}]</span>
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-1 rounded inline-block">
-                                {formatTime(log.created_at)}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Detalles */}
-                          {(Object.keys(source).length > 0) && (
-                            <div className="mt-3 bg-[#F8FAFF] dark:bg-[#262626] border border-[#ECEFF9] dark:border-[#374151] rounded-lg p-4">
-                              <p className="text-[10px] font-bold text-[#7B8198] dark:text-[#9CA3AF] uppercase mb-2 tracking-wider">Detalles del Cambio</p>
-                              <div className="space-y-2">
-                                {Object.entries(source).map(([key, value]) => {
-                                  if (key === 'targetName') return null;
-
-                                  const { label } = translateDetail(key, value);
-
-                                  // Logica para updates: "Campo: Valor anterior -> Valor nuevo"
-                                  if (isUpdate && typeof value === 'object' && value !== null && 'old' in value) {
-                                    return (
-                                      <div key={key} className="text-sm border-b border-dashed border-indigo-100 dark:border-gray-700 last:border-0 pb-1 last:pb-0">
-                                        <span className="font-semibold text-gray-600 dark:text-gray-400">{label}:</span>{" "}
-                                        <span className="text-red-400 line-through decoration-red-400/50 mx-1">{renderValueText(key, value.old)}</span>
-                                        <span className="text-gray-400">→</span>
-                                        <span className="text-green-600 dark:text-green-400 font-medium ml-1">{renderValueText(key, value.new)}</span>
-                                      </div>
-                                    );
-                                  }
-
-                                  // Logica simple: "Campo: Valor"
-                                  if (value === null || value === "" || value === undefined) return null;
-                                  return (
-                                    <div key={key} className="text-sm flex items-start">
-                                      <span className="font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">{label}:</span>
-                                      <span className="text-[#1E2559] dark:text-white font-medium ml-2">{renderValueText(key, value)}</span>
-                                    </div>
-                                  );
-                                })}
-                                {parsedDetails.targetName && (
-                                  <div className="text-sm mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-gray-500 italic">
-                                    Usuario afectado: {parsedDetails.targetName}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {logs.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Activity className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                      <p>No hay registros de actividad aún.</p>
-                    </div>
+                  {newUser.role === 'doctor' && (
+                    <>
+                      <FormControl>
+                        <FormLabel fontSize="sm" color="gray.600">Especialidad</FormLabel>
+                        <Select
+                          placeholder="Seleccionar área" bg="gray.50" borderRadius="lg"
+                          value={newUser.specialtyId}
+                          onChange={e => setNewUser({ ...newUser, specialtyId: e.target.value })}
+                        >
+                          {specialties.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </Select>
+                      </FormControl>
+                      <HStack w="full" gap={4}>
+                        <FormControl>
+                          <FormLabel fontSize="sm" color="gray.600">N° MPPS</FormLabel>
+                          <Input
+                            placeholder="00000" bg="gray.50" borderRadius="lg"
+                            value={newUser.mppsNumber}
+                            onChange={e => setNewUser({ ...newUser, mppsNumber: e.target.value })}
+                          />
+                        </FormControl>
+                        <FormControl>
+                          <FormLabel fontSize="sm" color="gray.600">N° Colegiado</FormLabel>
+                          <Input
+                            placeholder="00000" bg="gray.50" borderRadius="lg"
+                            value={newUser.colegioNumber}
+                            onChange={e => setNewUser({ ...newUser, colegioNumber: e.target.value })}
+                          />
+                        </FormControl>
+                      </HStack>
+                    </>
                   )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Create User Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#ECEFF9] dark:border-[#374151] p-8 max-w-2xl w-full">
-            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">
-              {activeTab === 'security' ? "Crear Nuevo Administrador" : "Crear Nuevo Personal"}
-            </h2>
+                  <Button
+                    type="submit"
+                    w="full" h="56px"
+                    bg="#2E39C9" color="white"
+                    _hover={{ bg: "#1E2A99" }}
+                    borderRadius="lg"
+                    isLoading={isSubmitting}
+                  >
+                    Generar Acceso y Credenciales
+                  </Button>
+                </VStack>
+              </form>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre Completo</label>
-                  <input type="text" required value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Correo Electrónico</label>
-                  <input type="email" required value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Rol en el Sistema</label>
-                  <select required value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
-                    {activeTab === 'security' ? (
-                      <>
-                        <option value="administrator">Administrativo</option>
-                        <option value="superuser">SuperUsuario</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="doctor">Médico</option>
-                        <option value="nurse">Enfermería</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-                {(newUser.role === 'nurse') && (
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Asignar a Médico (Equipo)</label>
-                    <select value={newUser.parent_doctor_id} onChange={e => setNewUser({ ...newUser, parent_doctor_id: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 border-blue-200">
-                      <option value="">Seleccione un médico</option>
-                      {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name} ({d.specialty})</option>)}
-                    </select>
-                  </div>
-                )}
-                {newUser.role === 'doctor' && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Especialidad</label>
-                    <select value={newUser.specialty} onChange={e => setNewUser({ ...newUser, specialty: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
-                      <option value="">Seleccione</option>
-                      {specialties.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-              <div className="flex space-x-3 pt-6">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 p-4 rounded-xl font-bold bg-gray-100">Cancelar</button>
-                <button type="submit" className="flex-1 p-4 rounded-xl font-bold bg-blue-600 text-white shadow-lg shadow-blue-200">Crear</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modal Detalle Médico / Equipo */}
+      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="4xl">
+        <ModalOverlay backdropFilter="blur(4px)" />
+        <ModalContent borderRadius="3xl" overflow="hidden">
+          <Box bgGradient="linear(to-r, #2E39C9, #1E2A99)" p={8} color="white">
+            <HStack spacing={4} align="center">
+              <Avatar size="xl" name={selectedDoctor?.full_name} border="4px solid white" />
+              <VStack align="start" spacing={1}>
+                <Heading size="lg">{selectedDoctor?.full_name}</Heading>
+                <Tag colorScheme="whiteAlpha" variant="solid" borderRadius="full">
+                  <TagLabel>{selectedDoctor?.specialty_name || 'Médico'}</TagLabel>
+                </Tag>
+              </VStack>
+            </HStack>
+          </Box>
 
-      {/* Edit User Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#ECEFF9] dark:border-[#374151] p-8 max-w-2xl w-full">
-            <h2 className="font-poppins font-bold text-2xl text-[#1E2559] dark:text-white mb-6">
-              {activeTab === 'security' ? "Editar Administrador" : "Editar Personal"}
-            </h2>
+          <ModalBody p={0}>
+            <Tabs isFitted variant="line" colorScheme="blue">
+              <TabList h="60px" borderTop="1px solid" borderColor="gray.100">
+                <Tab fontWeight="bold" color="gray.500" _selected={{ color: "blue.600", borderBottom: "3px solid" }}>
+                  Datos Personales
+                </Tab>
+                <Tab fontWeight="bold" color="gray.500" _selected={{ color: "blue.600", borderBottom: "3px solid" }}>
+                  Mi Equipo (Asistentes)
+                </Tab>
+                <Tab fontWeight="bold" color="gray.500" _selected={{ color: "blue.600", borderBottom: "3_px solid" }}>
+                  Historial de Accesos
+                </Tab>
+              </TabList>
 
-            <form onSubmit={handleUpdateUser} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre Completo</label>
-                  <input type="text" required value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Correo Electrónico</label>
-                  <input type="email" required disabled value={newUser.email} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-200 cursor-not-allowed" title="El email no puede ser modificado" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Rol en el Sistema</label>
-                  <select required value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
-                    {activeTab === 'security' ? (
-                      <>
-                        <option value="administrator">Administrativo</option>
-                        <option value="superuser">SuperUsuario</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="doctor">Médico</option>
-                        <option value="nurse">Enfermería</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-                {(newUser.role === 'nurse') && (
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Asignar a Médico (Equipo)</label>
-                    <select value={newUser.parent_doctor_id} onChange={e => setNewUser({ ...newUser, parent_doctor_id: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 border-blue-200">
-                      <option value="">Seleccione un médico</option>
-                      {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name} ({d.specialty})</option>)}
-                    </select>
-                  </div>
-                )}
-                {newUser.role === 'doctor' && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Especialidad</label>
-                    <select value={newUser.specialty} onChange={e => setNewUser({ ...newUser, specialty: e.target.value })} className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50">
-                      <option value="">Seleccione</option>
-                      {specialties.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-              <div className="flex space-x-3 pt-6">
-                <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 p-4 rounded-xl font-bold bg-gray-100">Cancelar</button>
-                <button type="submit" className="flex-1 p-4 rounded-xl font-bold bg-blue-600 text-white shadow-lg shadow-blue-200">Guardar Cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <TabPanels p={6} minH="400px">
+                <TabPanel>
+                  <VStack align="stretch" spacing={6}>
+                    <SimpleField label="Email de contacto" value={selectedDoctor?.email} />
+                    <Divider borderColor="gray.100" />
+                    <HStack gap={10}>
+                      <SimpleField label="Número MPPS" value={selectedDoctor?.mpps_number || 'No registrado'} />
+                      <SimpleField label="Número de Colegiado" value={selectedDoctor?.colegio_number || 'No registrado'} />
+                      <SimpleField label="RIF Profesional" value={selectedDoctor?.rif || 'No registrado'} />
+                    </HStack>
+                  </VStack>
+                </TabPanel>
 
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
-        .font-poppins { font-family: 'Poppins', sans-serif; }
-        .font-inter { font-family: 'Inter', sans-serif; }
-      `}</style>
-    </div>
+                <TabPanel>
+                  <Flex justify="space-between" align="center" mb={6}>
+                    <Box>
+                      <Heading size="sm">Usuarios Dependientes</Heading>
+                      <Text fontSize="xs" color="gray.500">Personal con permisos heredados</Text>
+                    </Box>
+                    <Button leftIcon={<Plus size={16} />} size="sm" colorScheme="blue">Agregar Miembro</Button>
+                  </Flex>
+
+                  <Table variant="unstyled" size="sm">
+                    <Thead bg="gray.50">
+                      <Tr>
+                        <Th borderRadius="lg 0 0 lg">Nombre</Th>
+                        <Th>Rol</Th>
+                        <Th>Estado</Th>
+                        <Th borderRadius="0 lg lg 0" textAlign="right">Remover</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {users.filter(u => u.parent_doctor_id === selectedDoctor?.id).map(member => (
+                        <Tr key={member.id}>
+                          <Td py={4}>
+                            <Text fontWeight="bold">{member.full_name}</Text>
+                            <Text fontSize="10px" color="gray.400">{member.email}</Text>
+                          </Td>
+                          <Td>
+                            <Badge colorScheme="purple" variant="outline" fontSize="9px">
+                              {member.role === 'nurse' ? 'ASISTENTE' : 'ADMIN'}
+                            </Badge>
+                          </Td>
+                          <Td>
+                            <Badge colorScheme="green" variant="solid" borderRadius="full" boxSize="8px" mr={2} />
+                            <Text display="inline" fontSize="xs">Activo</Text>
+                          </Td>
+                          <Td textAlign="right">
+                            <HStack justify="end" spacing={1}>
+                              <IconButton
+                                icon={<Key size={14} />}
+                                colorScheme="orange"
+                                variant="ghost"
+                                size="xs"
+                                aria-label="Reset Password"
+                                onClick={() => handleResetPassword(member.id)}
+                              />
+                              <IconButton
+                                icon={<Trash2 size={14} />}
+                                colorScheme="red"
+                                variant="ghost"
+                                size="xs"
+                                aria-label="Remove"
+                              />
+                            </HStack>
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                  {users.filter(u => u.parent_doctor_id === selectedDoctor?.id).length === 0 && (
+                    <VStack py={10} opacity={0.5}>
+                      <Users size={40} />
+                      <Text fontSize="sm">Este médico no tiene equipo asignado actualmente.</Text>
+                    </VStack>
+                  )}
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Flex>
+  );
+}
+
+function NavItem({ icon: Icon, label, active, onClick }) {
+  return (
+    <Button
+      leftIcon={<Icon size={18} />}
+      variant={active ? "solid" : "ghost"}
+      bg={active ? "white" : "transparent"}
+      color={active ? "#2E39C9" : "whiteAlpha.800"}
+      _hover={{ bg: active ? "white" : "whiteAlpha.100", color: active ? "#2E39C9" : "white" }}
+      justifyContent="start"
+      h="48px"
+      borderRadius="xl"
+      onClick={onClick}
+    >
+      <Text fontSize="sm" fontWeight={active ? "bold" : "medium"}>{label}</Text>
+    </Button>
+  );
+}
+
+function SimpleField({ label, value }) {
+  return (
+    <VStack align="start" spacing={0}>
+      <Text fontSize="xs" color="gray.400" fontWeight="bold" textTransform="uppercase">{label}</Text>
+      <Text fontSize="md" color="#1E2559" fontWeight="medium">{value || '-'}</Text>
+    </VStack>
   );
 }
