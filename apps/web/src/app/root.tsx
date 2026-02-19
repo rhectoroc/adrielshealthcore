@@ -19,7 +19,7 @@ import {
   type FC,
   Component,
 } from 'react';
-import './global.css';
+import '../global.css';
 
 import { toPng } from 'html-to-image';
 import fetch from '@/__create/fetch';
@@ -36,7 +36,7 @@ import type { Route } from './+types/root';
 import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
 import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import globalStyles from './global.css?url';
+import globalStyles from '../global.css?url';
 
 export const links = () => [
   { rel: 'stylesheet', href: globalStyles },
@@ -492,8 +492,8 @@ export default function App() {
       <SessionProvider>
         <ChakraProvider>
           <Outlet />
+        </ChakraProvider>
       </SessionProvider>
-    </SessionProvider>
-    </QueryClientProvider >
+    </QueryClientProvider>
   );
 }
