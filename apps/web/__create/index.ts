@@ -59,11 +59,11 @@ app.use('*', async (c, next) => {
   if (c.res.status === 200 && c.res.headers.get('content-type')?.includes('text/html')) {
     try {
       const html = await c.res.clone().text();
+      const hasCss = html.includes('.css');
+      console.log(`[DEBUG] HTML contains CSS references: ${hasCss}`);
       const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
       if (headMatch) {
-        console.log('[DEBUG] Server-side rendered <head>:', headMatch[1].substring(0, 1000));
-      } else {
-        console.log('[DEBUG] No <head> found in HTML response');
+        console.log('[DEBUG] Server-side rendered <head>:', headMatch[1].substring(0, 500));
       }
     } catch (e) {
       console.error('[DEBUG] Error reading response body:', e);

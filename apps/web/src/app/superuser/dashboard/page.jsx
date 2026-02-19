@@ -59,6 +59,11 @@ import {
 } from "lucide-react";
 
 export default function SuperUserDashboard() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const { data: authUser, loading: userLoading } = useUser();
   const [userProfile, setUserProfile] = useState(null);
   const [users, setUsers] = useState([]);
@@ -188,7 +193,7 @@ export default function SuperUserDashboard() {
     }
   };
 
-  if (userLoading || !userProfile) {
+  if (!isMounted || userLoading || !userProfile) {
     return (
       <Flex h="100vh" align="center" justify="center" bg="gray.50">
         <Spinner size="xl" color="blue.500" thickness="4px" />
