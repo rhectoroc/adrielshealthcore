@@ -15,6 +15,14 @@
   - Emisión de Recetas y Reposos (PDF).
 - **Arquitectura:** Confirmada infraestructura en Easypanel + Postgres + n8n.
 
+## [2026-02-19] - Escalado Clínico Multi-Especialidad:
+- **Estado:** Arquitectura lista para producción.
+- **Logros:**
+  - Implementada relación N:N para asistentes compartidos entre médicos.
+  - Dashboards dinámicos: Adaptación de herramientas por especialidad (ECG, Crecimiento, etc.).
+  - Auditoría reforzada: Registro de contexto administrativo por cada acción.
+  - Privacidad total: Aislamiento por doctor incluso para el mismo paciente (Cédula).
+
 ## [Pendiente Próximamente]
 - [ ] Crear endpoints en Hono para `GET /patients/:cedula`.
 - [ ] Diseñar UI de búsqueda con Chakra UI.

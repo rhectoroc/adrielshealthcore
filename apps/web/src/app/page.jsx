@@ -20,6 +20,8 @@ export default function HomePage() {
   const { data: authUser, loading: userLoading } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [associatedDoctors, setAssociatedDoctors] = useState([]);
+  const [currentContextDoctor, setCurrentContextDoctor] = useState(null);
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingPatients, setLoadingPatients] = useState(false);
@@ -32,6 +34,17 @@ export default function HomePage() {
         if (res.ok) {
           const data = await res.json();
           setUserProfile(data.user);
+          setAssociatedDoctors(data.associatedDoctors || []);
+
+          // Si es asistente, usar el primer doctor como contexto por defecto o el guardado
+          if (data.user?.role === 'nurse' || data.user?.role === 'administrator') {
+            const savedContextId = localStorage.getItem("healthcore_doctor_context");
+            const defaultDoctor = data.associatedDoctors?.find(d => d.uuid === savedContextId) || data.associatedDoctors?.[0];
+            if (defaultDoctor) {
+              setCurrentContextDoctor(defaultDoctor);
+              if (!savedContextId) localStorage.setItem("healthcore_doctor_context", defaultDoctor.uuid);
+            }
+          }
 
           // Redirect to superuser dashboard if user is superuser
           if (data.user && data.user.role === "superuser") {
@@ -170,6 +183,30 @@ export default function HomePage() {
               </button>
             </div>
 
+            {/* Selector de Contexto para Asistentes */}
+            {associatedDoctors.length > 0 && (
+              <Box mr={4}>
+                <Select
+                  size="sm"
+                  bg="white"
+                  borderRadius="md"
+                  value={currentContextDoctor?.uuid || ""}
+                  onChange={(e) => {
+                    const doc = associatedDoctors.find(d => d.uuid === e.target.value);
+                    setCurrentContextDoctor(doc);
+                    localStorage.setItem("healthcore_doctor_context", e.target.value);
+                    window.location.reload(); // Recargar para aplicar filtros globales
+                  }}
+                >
+                  {associatedDoctors.map(doc => (
+                    <option key={doc.uuid} value={doc.uuid}>
+                      {doc.full_name} ({doc.specialty || "Médico"})
+                    </option>
+                  ))}
+                </Select>
+              </Box>
+            )}
+
             {/* User Profile */}
             <a
               href="/account/logout"
@@ -231,8 +268,36 @@ export default function HomePage() {
             </h1>
             <p className="font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
               Sistema de Gestión Clínica HealthCore
+              {currentContextDoctor ? ` | Unidad de ${currentContextDoctor.specialty}` : ""}
             </p>
           </div>
+
+          {/* Tools por Especialidad */}
+          {currentContextDoctor?.specialty === 'Cardiología' && (
+            <Flex gap={4} mb={6}>
+              <Box p={4} bg="red.50" borderRadius="xl" border="1px solid" borderColor="red.100" flex={1}>
+                <Text fontWeight="bold" color="red.700" size="xs">Calculadora de Riesgo CV</Text>
+                <Text fontSize="xs" color="red.600">Herramienta de Especialidad Activa</Text>
+              </Box>
+              <Box p={4} bg="blue.50" borderRadius="xl" border="1px solid" borderColor="blue.100" flex={1}>
+                <Text fontWeight="bold" color="blue.700" size="xs">Visor de ECG</Text>
+                <Text fontSize="xs" color="blue.600">Acceso rápido a telemetría</Text>
+              </Box>
+            </Flex>
+          )}
+
+          {currentContextDoctor?.specialty === 'Pediatría' && (
+            <Flex gap={4} mb={6}>
+              <Box p={4} bg="green.50" borderRadius="xl" border="1px solid" borderColor="green.100" flex={1}>
+                <Text fontWeight="bold" color="green.700" size="xs">Curvas de Crecimiento</Text>
+                <Text fontSize="xs" color="green.600">Percentiles OMS v2026</Text>
+              </Box>
+              <Box p={4} bg="yellow.50" borderRadius="xl" border="1px solid" borderColor="yellow.100" flex={1}>
+                <Text fontWeight="bold" color="yellow.700" size="xs">Esquema Vacunación</Text>
+                <Text fontSize="xs" color="yellow.600">Control de dosis pendientes</Text>
+              </Box>
+            </Flex>
+          )}
 
           {/* Search Section */}
           <Box bg="white" _dark={{ bg: "#1E1E1E", borderColor: "#374151" }} borderRadius="2xl" border="1px solid" borderColor="#ECEFF9" p={6} mb={6}>

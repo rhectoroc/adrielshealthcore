@@ -24,13 +24,33 @@ export async function GET(request, { params }) {
         }
 
         const currentUser = userRows[0];
-        // El UUID del dueño es el doctor_id del usuario si es doctor, o el doctor_id del padre si es staff
-        const ownerDoctorUuid = currentUser.role === 'doctor'
-            ? currentUser.doctor_id
-            : currentUser.parent_doctor_uuid;
+        const contextDoctorUuid = request.headers.get("x-doctor-context");
+
+        let ownerDoctorUuid = null;
+
+        if (currentUser.role === 'doctor') {
+            ownerDoctorUuid = currentUser.doctor_id;
+        } else if (currentUser.role === 'nurse' || currentUser.role === 'administrator') {
+            // Si hay un contexto enviado, validar que el asistente esté vinculado a ese doctor
+            if (contextDoctorUuid) {
+                const linkedCheck = await sql`
+                    SELECT 1 FROM doctor_assistants da
+                    JOIN users u ON da.doctor_id = u.id
+                    WHERE da.assistant_id = ${currentUser.id} AND u.doctor_id = ${contextDoctorUuid}
+                `;
+                if (linkedCheck && linkedCheck.length > 0) {
+                    ownerDoctorUuid = contextDoctorUuid;
+                }
+            }
+
+            // Si no hay contexto o falló la validación, intentar con el parent_doctor_id legacy
+            if (!ownerDoctorUuid) {
+                ownerDoctorUuid = currentUser.parent_doctor_uuid;
+            }
+        }
 
         if (!ownerDoctorUuid && currentUser.role !== 'superuser') {
-            return Response.json({ error: "No tiene un equipo médico asignado o vinculado a un doctor" }, { status: 403 });
+            return Response.json({ error: "No tiene un equipo médico autorizado o el contexto del doctor es inválido" }, { status: 403 });
         }
 
         // Buscar paciente por cédula y doctor_id (multitenancy)

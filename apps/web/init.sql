@@ -105,9 +105,19 @@ CREATE TABLE IF NOT EXISTS patients (
     UNIQUE(doctor_id, cedula)
 );
 
+-- Nueva tabla para relación N:N entre Médicos y Asistentes
+CREATE TABLE IF NOT EXISTS doctor_assistants (
+    id SERIAL PRIMARY KEY,
+    doctor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    assistant_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(doctor_id, assistant_id)
+);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
+    doctor_context_id INTEGER REFERENCES users(id), -- Contexto del doctor bajo el cual se actúa
     action TEXT NOT NULL,
     entity_type TEXT NOT NULL,
     entity_id INTEGER,

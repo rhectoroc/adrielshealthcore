@@ -93,11 +93,15 @@ export async function POST(request) {
     const consultation = result?.[0] || null;
 
     if (consultation) {
-      // Registrar log de auditoría
+      // Registrar log de auditoría con contexto de doctor (Multitenancy)
+      const contextDoctorIdResult = await sql`SELECT id FROM users WHERE doctor_id = ${ownerDoctorUuid} LIMIT 1`;
+      const contextDoctorId = contextDoctorIdResult?.[0]?.id;
+
       await sql`
-        INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
+        INSERT INTO audit_logs (user_id, doctor_context_id, action, entity_type, entity_id, details)
         VALUES (
           ${userId}, 
+          ${contextDoctorId || null},
           'CREATE_CONSULTATION', 
           'consultation', 
           ${consultation.id}, 

@@ -54,7 +54,10 @@ export default function PatientSearch({ onPatientSelect }) {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`/api/patients/cedula/${cedula}`);
+            const contextDoctorUuid = localStorage.getItem("healthcore_doctor_context");
+            const headers = contextDoctorUuid ? { "x-doctor-context": contextDoctorUuid } : {};
+
+            const response = await fetch(`/api/patients/cedula/${cedula}`, { headers });
             if (response.ok) {
                 const data = await response.json();
                 setPatient(data.patient);

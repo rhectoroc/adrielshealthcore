@@ -19,6 +19,19 @@ export async function GET() {
     `;
 
     let userProfile = userRows?.[0] || null;
+    let associatedDoctors = [];
+
+    // Si es asistente o admin, buscar doctores asociados
+    if (userProfile && (userProfile.role === 'nurse' || userProfile.role === 'administrator')) {
+      const doctorsResult = await sql`
+        SELECT u.id, u.full_name, u.email, u.doctor_id as uuid, s.name as specialty
+        FROM users u
+        JOIN doctor_assistants da ON u.id = da.doctor_id
+        LEFT JOIN specialties s ON u.specialty_id = s.id
+        WHERE da.assistant_id = ${userProfile.id}
+      `;
+      associatedDoctors = doctorsResult || [];
+    }
 
     // Check if any superuser exists in the system
     const superuserCountResult = await sql`
@@ -28,6 +41,7 @@ export async function GET() {
 
     return Response.json({
       user: userProfile,
+      associatedDoctors,
       authUser: session.user,
       superuserExists
     });
