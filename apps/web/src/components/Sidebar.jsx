@@ -29,11 +29,11 @@ const Sidebar = ({ role, userProfile }) => {
     const pathname = location.pathname;
 
     const superUserItems = [
-        { icon: LayoutDashboard, label: "Dashboard Global", path: "/superuser/dashboard" },
-        { icon: Users, label: "Gestión Médica", path: "/superuser/dashboard" }, // Temp redirect or tab
-        { icon: Activity, label: "Auditoría", path: "#" },
-        { icon: Database, label: "Base de Datos", path: "#" },
-        { icon: Settings, label: "Configuración", path: "#" },
+        { icon: LayoutDashboard, label: "Dashboard Global", path: "/superuser/overview" },
+        { icon: Users, label: "Gestión Médica", path: "/superuser/dashboard" },
+        { icon: Activity, label: "Auditoría", path: "/superuser/audit" },
+        { icon: Database, label: "Base de Datos", path: "/superuser/database" },
+        { icon: Settings, label: "Configuración", path: "/superuser/settings" },
     ];
 
     const doctorItems = [
