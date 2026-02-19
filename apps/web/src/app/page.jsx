@@ -14,6 +14,7 @@ import {
   DollarSign,
   UserPlus,
 } from "lucide-react";
+import PatientSearch from "@/components/PatientSearch";
 
 export default function HomePage() {
   const { data: authUser, loading: userLoading } = useUser();
@@ -234,110 +235,15 @@ export default function HomePage() {
           </div>
 
           {/* Search Section */}
-          <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#ECEFF9] dark:border-[#374151] p-6 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
-              <div>
-                <h2 className="font-poppins font-semibold text-xl text-[#1E2559] dark:text-white mb-1">
-                  Búsqueda de Pacientes
-                </h2>
-                <p className="font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
-                  Buscar por cédula o nombre
-                </p>
-              </div>
-              <a
-                href="/patients/new"
-                className="flex items-center space-x-2 px-4 py-2 bg-[#2E39C9] dark:bg-[#4F46E5] text-white rounded-lg font-inter font-medium text-sm hover:bg-[#1E2A99] dark:hover:bg-[#4338CA] active:bg-[#1B2080] dark:active:bg-[#3730A3] transition-colors duration-200"
-              >
-                <UserPlus size={18} />
-                <span>Nuevo Paciente</span>
-              </a>
-            </div>
-
-            {/* Search Input */}
-            <div className="relative mb-6">
-              <Search
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7B8198] dark:text-[#9CA3AF]"
-              />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por cédula o nombre..."
-                className="w-full pl-12 pr-4 py-3 rounded-lg border border-[#ECEFF9] dark:border-[#374151] bg-white dark:bg-[#262626] font-inter text-[#1E2559] dark:text-white placeholder:text-[#7B8198] dark:placeholder:text-[#9CA3AF] outline-none focus:border-[#2E39C9] dark:focus:border-[#4F46E5] focus:ring-2 focus:ring-[#2E39C9] dark:focus:ring-[#4F46E5] transition-all duration-200"
-              />
-            </div>
-
-            {/* Patient List */}
-            {loadingPatients ? (
-              <div className="text-center py-8">
-                <div className="inline-block h-6 w-6 animate-spin rounded-full border-3 border-solid border-[#2E39C9] dark:border-[#4F46E5] border-r-transparent"></div>
-                <p className="mt-2 font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
-                  Buscando pacientes...
-                </p>
-              </div>
-            ) : patients.length === 0 ? (
-              <div className="text-center py-12">
-                <Users
-                  size={48}
-                  className="text-[#7B8198] dark:text-[#9CA3AF] mx-auto mb-4"
-                />
-                <h3 className="font-poppins font-semibold text-lg text-[#1E2559] dark:text-white mb-2">
-                  No se encontraron pacientes
-                </h3>
-                <p className="font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF] mb-6">
-                  {searchTerm
-                    ? "No hay pacientes que coincidan con su búsqueda"
-                    : "Aún no hay pacientes registrados en el sistema"}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {patients.map((patient) => (
-                  <a
-                    key={patient.id}
-                    href={`/patients/${patient.id}`}
-                    className="block p-4 rounded-lg border border-[#ECEFF9] dark:border-[#374151] hover:bg-[#F9FAFF] dark:hover:bg-[#2D2D2D] hover:border-[#D5DAF9] dark:hover:border-[#4B5563] transition-all duration-200 cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
-                          <span className="font-poppins font-semibold text-white text-lg">
-                            {patient.full_name?.charAt(0)?.toUpperCase() || "P"}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="font-poppins font-semibold text-[#1E2559] dark:text-white">
-                            {patient.full_name}
-                          </h3>
-                          <div className="flex items-center space-x-3 mt-1">
-                            <span className="font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
-                              Cédula: {patient.cedula}
-                            </span>
-                            {patient.blood_type && (
-                              <>
-                                <span className="text-[#7B8198] dark:text-[#9CA3AF]">
-                                  •
-                                </span>
-                                <span className="font-inter text-sm text-[#7B8198] dark:text-[#9CA3AF]">
-                                  Tipo: {patient.blood_type}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="hidden sm:block">
-                        <span className="inline-flex items-center px-3 py-1 rounded-lg bg-[#D5F7E8] dark:bg-[#065F46] text-[#1E9E63] dark:text-[#34D399] font-inter font-semibold text-xs">
-                          Ver perfil
-                        </span>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
+          <Box bg="white" _dark={{ bg: "#1E1E1E", borderColor: "#374151" }} borderRadius="2xl" border="1px solid" borderColor="#ECEFF9" p={6} mb={6}>
+            <PatientSearch
+              onPatientSelect={(patient) => {
+                console.log("Paciente seleccionado:", patient);
+                // Aquí se activará el Paso 3: MedicalActionPanel
+                window.location.href = `/patients/${patient.id}`;
+              }}
+            />
+          </Box>
         </div>
       </div>
 

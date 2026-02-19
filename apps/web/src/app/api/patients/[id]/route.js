@@ -11,9 +11,32 @@ export async function GET(request, { params }) {
 
     const { id } = params;
 
-    const result = await sql`
-      SELECT * FROM patients WHERE id = ${id} LIMIT 1
+    // Get user profile for multitenancy (UUID based)
+    const userRows = await sql`
+      SELECT u.id, u.role, u.parent_doctor_id, u.doctor_id,
+             p.doctor_id as parent_doctor_uuid
+      FROM users u
+      LEFT JOIN users p ON u.parent_doctor_id = p.id
+      WHERE u.email = ${session.user.email} 
+      LIMIT 1
     `;
+    if (!userRows || userRows.length === 0) {
+      return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    const currentUser = userRows[0];
+    const ownerDoctorUuid = currentUser.role === 'doctor'
+      ? currentUser.doctor_id
+      : currentUser.parent_doctor_uuid;
+
+    if (!ownerDoctorUuid && currentUser.role !== 'superuser') {
+      return Response.json({ error: "No tiene un equipo médico asignado o vinculado a un doctor" }, { status: 403 });
+    }
+
+    // Buscar paciente por ID y dueño (UUID)
+    const result = currentUser.role === 'superuser'
+      ? await sql`SELECT * FROM patients WHERE id = ${id} LIMIT 1`
+      : await sql`SELECT * FROM patients WHERE id = ${id} AND doctor_id = ${ownerDoctorUuid} LIMIT 1`;
 
     const patient = result?.[0] || null;
 
@@ -134,12 +157,30 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const updateQuery = `
-      UPDATE patients 
-      SET ${setClauses.join(", ")} 
-      WHERE id = $${paramCount}
-      RETURNING *
+    // Multitenancy check for update (UUID based)
+    const userRows = await sql`
+      SELECT u.id, u.role, u.parent_doctor_id, u.doctor_id,
+             p.doctor_id as parent_doctor_uuid
+      FROM users u
+      LEFT JOIN users p ON u.parent_doctor_id = p.id
+      WHERE u.email = ${session.user.email} 
+      LIMIT 1
     `;
+    if (!userRows || userRows.length === 0) {
+      return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+    const currentUser = userRows[0];
+    const ownerDoctorUuid = currentUser.role === 'doctor'
+      ? currentUser.doctor_id
+      : currentUser.parent_doctor_uuid;
+
+    if (!ownerDoctorUuid && currentUser.role !== 'superuser') {
+      return Response.json({ error: "No tiene un equipo médico asignado o vinculado a un doctor" }, { status: 403 });
+    }
+
+    const updateQuery = currentUser.role === 'superuser'
+      ? `UPDATE patients SET ${setClauses.join(", ")} WHERE id = $${paramCount} RETURNING *`
+      : `UPDATE patients SET ${setClauses.join(", ")} WHERE id = $${paramCount} AND doctor_id = '${ownerDoctorUuid}' RETURNING *`;
 
     values.push(id);
     const result = await sql.unsafe(updateQuery, values);
@@ -147,7 +188,7 @@ export async function PUT(request, { params }) {
 
     if (!patient) {
       return Response.json(
-        { error: "Paciente no encontrado" },
+        { error: "Paciente no encontrado o no tiene permisos para editarlo" },
         { status: 404 },
       );
     }

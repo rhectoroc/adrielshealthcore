@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ChakraProvider } from '@chakra-ui/react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,10 +12,12 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function RootLayout({children}) {
+export default function RootLayout({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <ChakraProvider>
+        {children}
+      </ChakraProvider>
     </QueryClientProvider>
   );
 }

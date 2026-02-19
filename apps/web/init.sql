@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS specialties (
 
 CREATE TABLE IF NOT EXISTS patients (
     id SERIAL PRIMARY KEY,
-    cedula TEXT UNIQUE NOT NULL,
+    cedula TEXT NOT NULL,
     full_name TEXT NOT NULL,
     date_of_birth DATE,
     gender TEXT,
@@ -95,9 +95,13 @@ CREATE TABLE IF NOT EXISTS patients (
     emergency_contact_name TEXT,
     emergency_contact_phone TEXT,
     allergies TEXT,
+    uuid UUID DEFAULT gen_random_uuid(),
+    doctor_id UUID REFERENCES auth_users(id),
+    control_number SERIAL,
     created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(doctor_id, cedula)
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -110,7 +114,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Initial Data
 INSERT INTO specialties (name) VALUES 
 ('Cardiología'), ('Pediatría'), ('Ginecología'), ('Traumatología'), ('Medicina General')
 ON CONFLICT (name) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS consultations (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    doctor_id INTEGER NOT NULL REFERENCES users(id),
+    reason TEXT,
+    physical_exam TEXT,
+    diagnosis TEXT NOT NULL,
+    prescriptions TEXT, -- Can be JSONB if we want more structure later
+    sick_leave TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

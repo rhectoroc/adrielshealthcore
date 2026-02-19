@@ -9,16 +9,29 @@ export async function POST(request) {
       return Response.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // Get user profile
+    // Get user profile for multitenancy (UUID based)
     const userRows = await sql`
-      SELECT id FROM users WHERE email = ${session.user.email} LIMIT 1
+      SELECT u.id, u.role, u.parent_doctor_id, u.doctor_id,
+             p.doctor_id as parent_doctor_uuid
+      FROM users u
+      LEFT JOIN users p ON u.parent_doctor_id = p.id
+      WHERE u.email = ${session.user.email} 
+      LIMIT 1
     `;
 
     if (!userRows || userRows.length === 0) {
       return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    const userId = userRows[0].id;
+    const currentUser = userRows[0];
+    const ownerDoctorUuid = currentUser.role === 'doctor'
+      ? currentUser.doctor_id
+      : currentUser.parent_doctor_uuid;
+
+    if (!ownerDoctorUuid && currentUser.role !== 'superuser') {
+      return Response.json({ error: "No tiene un equipo médico asignado o vinculado a un doctor" }, { status: 403 });
+    }
+
     const body = await request.json();
     const {
       cedula,
@@ -47,14 +60,14 @@ export async function POST(request) {
       INSERT INTO patients (
         cedula, full_name, date_of_birth, gender, blood_type, weight, height,
         phone, email, address, emergency_contact_name, emergency_contact_phone,
-        allergies, created_by
+        allergies, created_by, doctor_id
       )
       VALUES (
         ${cedula}, ${fullName}, ${dateOfBirth || null}, ${gender || null},
         ${bloodType || null}, ${weight || null}, ${height || null},
         ${phone || null}, ${email || null}, ${address || null},
         ${emergencyContactName || null}, ${emergencyContactPhone || null},
-        ${allergies || null}, ${userId}
+        ${allergies || null}, ${currentUser.id}, ${ownerDoctorUuid}
       )
       RETURNING *
     `;
@@ -84,6 +97,24 @@ export async function GET(request) {
       return Response.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    // Get user profile for filtering
+    const userRows = await sql`
+      SELECT u.id, u.role, u.parent_doctor_id, u.doctor_id,
+             p.doctor_id as parent_doctor_uuid
+      FROM users u
+      LEFT JOIN users p ON u.parent_doctor_id = p.id
+      WHERE u.email = ${session.user.email} 
+      LIMIT 1
+    `;
+    if (!userRows || userRows.length === 0) {
+      return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    const currentUser = userRows[0];
+    const ownerDoctorUuid = currentUser.role === 'doctor'
+      ? currentUser.doctor_id
+      : currentUser.parent_doctor_uuid;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -95,6 +126,16 @@ export async function GET(request) {
     `;
     const values = [];
     let paramCount = 1;
+
+    // Filter by Owner UUID (Multitenancy)
+    if (currentUser.role !== 'superuser') {
+      if (!ownerDoctorUuid) {
+        return Response.json({ error: "No tiene un equipo médico asignado o vinculado a un doctor" }, { status: 403 });
+      }
+      query += ` AND doctor_id = $${paramCount}`;
+      values.push(ownerDoctorUuid);
+      paramCount++;
+    }
 
     if (search && search.trim().length > 0) {
       query += ` AND (
