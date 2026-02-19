@@ -28,11 +28,16 @@ export default function HomePage() {
   const [userProfile, setUserProfile] = useState(null);
   const [associatedDoctors, setAssociatedDoctors] = useState([]);
   const [currentContextDoctor, setCurrentContextDoctor] = useState(null);
-  const [patients, setPatients] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loadingPatients, setLoadingPatients] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
+  // 1. Immediate redirect for unauthenticated users
+  useEffect(() => {
+    if (!userLoading && !authUser) {
+      window.location.href = "/account/signin";
+    }
+  }, [userLoading, authUser]);
+
+  // 2. Fetch profile only if authenticated
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -42,7 +47,7 @@ export default function HomePage() {
           setUserProfile(data.user);
           setAssociatedDoctors(data.associatedDoctors || []);
 
-          // Si es asistente, usar el primer doctor como contexto por defecto o el guardado
+          // Asistente logic
           if (data.user?.role === 'nurse' || data.user?.role === 'administrator') {
             const savedContextId = localStorage.getItem("healthcore_doctor_context");
             const defaultDoctor = data.associatedDoctors?.find(d => d.uuid === savedContextId) || data.associatedDoctors?.[0];
@@ -52,23 +57,20 @@ export default function HomePage() {
             }
           }
 
-          // Redirect to superuser dashboard if user is superuser
+          // SuperUser Redirect
           if (data.user && data.user.role === "superuser") {
-            console.log("SuperUser detected, redirecting...");
             window.location.href = "/superuser/dashboard";
             return;
           }
 
-          // Redirect to onboarding if profile not complete
+          // Onboarding Redirect
           if (!data.user) {
-            console.log("No profile found, redirecting to onboarding...");
             window.location.href = "/onboarding";
             return;
           }
 
           setLoadingProfile(false);
         } else {
-          // Handle fetch error
           setLoadingProfile(false);
         }
       } catch (err) {
@@ -79,24 +81,11 @@ export default function HomePage() {
 
     if (authUser && !userLoading) {
       fetchProfile();
-    } else if (!userLoading && !authUser) {
-      // If not logged in, let the next check handle redirect
-      setLoadingProfile(false);
     }
   }, [authUser, userLoading]);
 
-  // Items de navegación (sidebar)
-  const navItems = [
-    { icon: Home, label: "Panel Principal", href: "/", active: true },
-    { icon: Calendar, label: "Agenda Médica", href: "/agenda" },
-    { icon: Users, label: "Mis Pacientes", href: "/patients" },
-    { icon: Clipboard, label: "Consultas Pendientes", href: "/consultations" },
-    { icon: FileText, label: "Reportes", href: "/reports" },
-    { icon: DollarSign, label: "Honorarios y Pagos", href: "/billing" },
-    { icon: Settings, label: "Configuración", href: "/settings" },
-  ];
-
-  if (userLoading || loadingProfile) {
+  // 3. Render logic
+  if (userLoading || (authUser && loadingProfile)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F8FAFF] dark:bg-[#121212]">
         <div className="text-center">
@@ -109,12 +98,8 @@ export default function HomePage() {
     );
   }
 
-  if (!authUser) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/account/signin";
-    }
-    return null;
-  }
+  // If not authenticated (and not loading), we are redirecting. Return null.
+  if (!authUser) return null;
 
   return (
     <div className="min-h-screen bg-[#F8FAFF] dark:bg-[#121212]">

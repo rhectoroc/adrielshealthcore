@@ -1,6 +1,6 @@
 import { useState } from "react";
 import useAuth from "@/utils/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 export default function SignInPage() {
   const [error, setError] = useState(null);
