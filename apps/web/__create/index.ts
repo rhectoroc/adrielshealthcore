@@ -47,10 +47,28 @@ const app = new Hono();
 
 app.use('*', requestId());
 
-app.use('*', (c, next) => {
-  console.log(`[REQUEST] ${c.req.method} ${c.req.path}`);
-  const requestId = c.get('requestId');
-  return als.run({ requestId }, () => next());
+app.use('*', async (c, next) => {
+  const method = c.req.method;
+  const path = c.req.path;
+  console.log(`[REQUEST] ${method} ${path}`);
+
+  await next();
+
+  console.log(`[RESPONSE] ${method} ${path} - ${c.res.status}`);
+
+  if (c.res.status === 200 && c.res.headers.get('content-type')?.includes('text/html')) {
+    try {
+      const html = await c.res.clone().text();
+      const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
+      if (headMatch) {
+        console.log('[DEBUG] Server-side rendered <head>:', headMatch[1].substring(0, 1000));
+      } else {
+        console.log('[DEBUG] No <head> found in HTML response');
+      }
+    } catch (e) {
+      console.error('[DEBUG] Error reading response body:', e);
+    }
+  }
 });
 
 app.use(contextStorage());
