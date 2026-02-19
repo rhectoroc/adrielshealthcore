@@ -34,11 +34,6 @@ import { HotReloadIndicator } from '../__create/HotReload';
 import { useSandboxStore } from '../__create/hmr-sandbox-store';
 import type { Route } from './+types/root';
 import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
-import { ChakraProvider } from '@chakra-ui/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-const queryClient = new QueryClient();
-
 export const links = () => [];
 
 if (globalThis.window && globalThis.window !== undefined) {
@@ -485,12 +480,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ChakraProvider>
-        <SessionProvider>
-          <Outlet />
-        </SessionProvider>
-      </ChakraProvider>
-    </QueryClientProvider>
+    <SessionProvider>
+      <Outlet />
+    </SessionProvider>
   );
 }
