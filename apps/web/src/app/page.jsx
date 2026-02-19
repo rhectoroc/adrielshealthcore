@@ -14,6 +14,12 @@ import {
   DollarSign,
   UserPlus,
 } from "lucide-react";
+import {
+  Box,
+  Flex,
+  Select,
+  Text
+} from "@chakra-ui/react";
 import PatientSearch from "@/components/PatientSearch";
 
 export default function HomePage() {
