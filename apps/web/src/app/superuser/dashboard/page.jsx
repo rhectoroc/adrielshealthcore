@@ -57,6 +57,7 @@ import {
   UserPlus,
   Key,
 } from "lucide-react";
+import MainLayout from "@/components/MainLayout";
 
 export default function SuperUserDashboard() {
   const [isMounted, setIsMounted] = useState(false);
@@ -205,46 +206,8 @@ export default function SuperUserDashboard() {
   const staff = users.filter(u => u.role === 'nurse' || u.role === 'administrator');
 
   return (
-    <Flex minH="100vh" bg="#F8FAFF">
-      {/* Sidebar - Personalizado con el Azul del sistema */}
-      <Box
-        w="260px"
-        bgGradient="linear(to-b, #2E39C9, #1E2A99)"
-        color="white"
-        p={6}
-        display={{ base: "none", lg: "block" }}
-      >
-        <Flex align="center" mb={10}>
-          <Shield size={32} />
-          <VStack align="start" spacing={0} ml={3}>
-            <Text fontWeight="bold" fontSize="lg">HealthCore</Text>
-            <Text fontSize="xs" opacity={0.7}>Administración</Text>
-          </VStack>
-        </Flex>
-
-        <VStack align="stretch" spacing={2}>
-          <NavItem icon={Users} label="Gestión Médica" active={activeTab === "users"} onClick={() => setActiveTab("users")} />
-          <NavItem icon={Activity} label="Auditoría" active={activeTab === "logs"} onClick={() => setActiveTab("logs")} />
-          <NavItem icon={Database} label="Base de Datos" active={activeTab === "db"} onClick={() => setActiveTab("db")} />
-          <NavItem icon={Settings} label="Configuración" active={activeTab === "settings"} onClick={() => setActiveTab("settings")} />
-        </VStack>
-
-        <Box mt="auto" pt={10}>
-          <Button
-            leftIcon={<LogOut size={18} />}
-            variant="ghost"
-            colorScheme="whiteAlpha"
-            w="full"
-            justifyContent="start"
-            onClick={() => window.location.href = "/account/logout"}
-          >
-            Cerrar Sesión
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Content */}
-      <Box flex={1} p={{ base: 4, md: 8 }} overflowY="auto">
+    <MainLayout allowedRoles={["superuser"]}>
+      <Box p={{ base: 4, md: 8 }}>
         <Flex justify="space-between" align="center" mb={8}>
           <Box>
             <Heading size="lg" color="#1E2559">Gestión de Unidades Médicas</Heading>
@@ -607,27 +570,10 @@ export default function SuperUserDashboard() {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </Flex>
+    </MainLayout>
   );
 }
 
-function NavItem({ icon: Icon, label, active, onClick }) {
-  return (
-    <Button
-      leftIcon={<Icon size={18} />}
-      variant={active ? "solid" : "ghost"}
-      bg={active ? "white" : "transparent"}
-      color={active ? "#2E39C9" : "whiteAlpha.800"}
-      _hover={{ bg: active ? "white" : "whiteAlpha.100", color: active ? "#2E39C9" : "white" }}
-      justifyContent="start"
-      h="48px"
-      borderRadius="xl"
-      onClick={onClick}
-    >
-      <Text fontSize="sm" fontWeight={active ? "bold" : "medium"}>{label}</Text>
-    </Button>
-  );
-}
 
 function SimpleField({ label, value }) {
   return (

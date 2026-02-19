@@ -38,9 +38,7 @@ import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import globalStyles from '../global.css?url';
 
-if (import.meta.env.SSR) {
-  console.log('[DEBUG] SSR globalStyles URL:', globalStyles);
-}
+
 
 export const links = () => [
   { rel: 'stylesheet', href: globalStyles },

@@ -162,6 +162,15 @@ export async function POST(request) {
 
     const newUser = result?.[0] || null;
 
+    // 5. SI hay parent_doctor_id, insertar también en tabla relacional doctor_assistants
+    if (newUser && parent_doctor_id) {
+      await sql`
+        INSERT INTO doctor_assistants (doctor_id, assistant_id)
+        VALUES (${parent_doctor_id}, ${newUser.id})
+        ON CONFLICT (doctor_id, assistant_id) DO NOTHING
+      `;
+    }
+
     // Log the action
     const actorResult = await sql`SELECT id FROM users WHERE LOWER(email) = LOWER(${session.user.email}) LIMIT 1`;
     const actorId = actorResult?.[0]?.id || null;
