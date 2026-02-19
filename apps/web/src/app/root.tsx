@@ -50,7 +50,7 @@ if (globalThis.window && globalThis.window !== undefined) {
   globalThis.window.fetch = fetch;
 }
 
-const LoadFontsSSR = import.meta.env.SSR ? LoadFonts : null;
+const LoadFontsSSR = LoadFonts;
 if (import.meta.hot) {
   import.meta.hot.on('update-font-links', (urls: string[]) => {
     // remove old font links
@@ -483,14 +483,14 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-        <ColorModeScript initialColorMode="light" />
         {import.meta.env.DEV && (
           <script type="module" src="/src/__create/dev-error-overlay.js"></script>
         )}
         <link rel="icon" href="/src/__create/favicon.png" />
-        {LoadFontsSSR ? <LoadFontsSSR /> : null}
+        <LoadFontsSSR />
       </head>
       <body>
+        <ColorModeScript initialColorMode="light" />
         {children}
         <HotReloadIndicator />
         <Toaster position="bottom-right" />
@@ -503,12 +503,6 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
   const [queryClient] = useState(() => new QueryClient());
-
-  if (typeof window !== 'undefined') {
-    console.log('[DEBUG] Rendering App on CLIENT');
-  } else {
-    console.log('[DEBUG] Rendering App on SERVER');
-  }
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -271,6 +271,8 @@ export default function SuperUserDashboard() {
             <Flex mb={6} gap={4}>
               <Box position="relative" flex={1}>
                 <Input
+                  id="user-search"
+                  name="user-search"
                   placeholder="Buscar especialistas por nombre o email..."
                   pl={10}
                   bg="gray.50"
@@ -282,8 +284,15 @@ export default function SuperUserDashboard() {
                   <Search size={18} />
                 </Box>
               </Box>
-              <Select w="200px" bg="gray.50" border="none" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-                <option value="all">Todos los Roles</option>
+              <Select
+                id="role-filter"
+                name="role-filter"
+                w="200px"
+                bg="gray.50"
+                border="none"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
                 <option value="doctor">Especialistas</option>
                 <option value="nurse">Asistentes</option>
                 <option value="administrator">Administradores</option>
@@ -389,9 +398,11 @@ export default function SuperUserDashboard() {
             ) : (
               <form onSubmit={handleCreateUser}>
                 <VStack spacing={5}>
-                  <FormControl isRequired>
+                  <FormControl id="fullName" isRequired>
                     <FormLabel fontSize="sm" color="gray.600">Nombre Completo</FormLabel>
                     <Input
+                      id="new-user-fullName"
+                      name="fullName"
                       placeholder="Ej. Dr. Andrés Moreno"
                       bg="gray.50" borderRadius="lg"
                       value={newUser.fullName}
@@ -400,9 +411,11 @@ export default function SuperUserDashboard() {
                   </FormControl>
 
                   <HStack w="full" gap={4}>
-                    <FormControl isRequired>
+                    <FormControl id="email" isRequired>
                       <FormLabel fontSize="sm" color="gray.600">Email Corporativo</FormLabel>
                       <Input
+                        id="new-user-email"
+                        name="email"
                         placeholder="email@clinica.com"
                         type="email" bg="gray.50"
                         borderRadius="lg"
@@ -410,9 +423,11 @@ export default function SuperUserDashboard() {
                         onChange={e => setNewUser({ ...newUser, email: e.target.value })}
                       />
                     </FormControl>
-                    <FormControl isRequired>
+                    <FormControl id="role" isRequired>
                       <FormLabel fontSize="sm" color="gray.600">Rol</FormLabel>
                       <Select
+                        id="new-user-role"
+                        name="role"
                         bg="gray.50" borderRadius="lg"
                         value={newUser.role}
                         onChange={e => setNewUser({ ...newUser, role: e.target.value })}
@@ -426,9 +441,11 @@ export default function SuperUserDashboard() {
 
                   {newUser.role === 'doctor' && (
                     <>
-                      <FormControl>
+                      <FormControl id="specialtyId">
                         <FormLabel fontSize="sm" color="gray.600">Especialidad</FormLabel>
                         <Select
+                          id="new-user-specialty"
+                          name="specialtyId"
                           placeholder="Seleccionar área" bg="gray.50" borderRadius="lg"
                           value={newUser.specialtyId}
                           onChange={e => setNewUser({ ...newUser, specialtyId: e.target.value })}
@@ -437,17 +454,21 @@ export default function SuperUserDashboard() {
                         </Select>
                       </FormControl>
                       <HStack w="full" gap={4}>
-                        <FormControl>
+                        <FormControl id="mppsNumber">
                           <FormLabel fontSize="sm" color="gray.600">N° MPPS</FormLabel>
                           <Input
+                            id="new-user-mppsNumber"
+                            name="mppsNumber"
                             placeholder="00000" bg="gray.50" borderRadius="lg"
                             value={newUser.mppsNumber}
                             onChange={e => setNewUser({ ...newUser, mppsNumber: e.target.value })}
                           />
                         </FormControl>
-                        <FormControl>
+                        <FormControl id="colegioNumber">
                           <FormLabel fontSize="sm" color="gray.600">N° Colegiado</FormLabel>
                           <Input
+                            id="new-user-colegioNumber"
+                            name="colegioNumber"
                             placeholder="00000" bg="gray.50" borderRadius="lg"
                             value={newUser.colegioNumber}
                             onChange={e => setNewUser({ ...newUser, colegioNumber: e.target.value })}
