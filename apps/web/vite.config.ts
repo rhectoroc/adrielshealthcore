@@ -1,4 +1,5 @@
 import path from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
 import { reactRouter } from '@react-router/dev/vite';
 import { reactRouterHonoServer } from 'react-router-hono-server/dev';
 import { defineConfig } from 'vite';
@@ -33,6 +34,7 @@ export default defineConfig({
   },
   logLevel: 'info',
   plugins: [
+    tailwindcss(),
     nextPublicProcessEnv(),
     restartEnvFileChange(),
     reactRouterHonoServer({
