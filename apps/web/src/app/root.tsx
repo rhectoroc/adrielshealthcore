@@ -19,7 +19,7 @@ import {
   type FC,
   Component,
 } from 'react';
-import '../global.css';
+
 
 import { toPng } from 'html-to-image';
 import fetch from '@/__create/fetch';
@@ -37,6 +37,10 @@ import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
 import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import globalStyles from '../global.css?url';
+
+if (import.meta.env.SSR) {
+  console.log('[DEBUG] SSR globalStyles URL:', globalStyles);
+}
 
 export const links = () => [
   { rel: 'stylesheet', href: globalStyles },
@@ -449,6 +453,19 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [navigate]);
 
   useEffect(() => {
+    // Load FontAwesome script after hydration
+    const script = document.createElement('script');
+    script.src = "https://kit.fontawesome.com/2c15cc0cc7.js";
+    script.crossOrigin = "anonymous";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  useEffect(() => {
     if (pathname) {
       window.parent.postMessage(
         {
@@ -466,7 +483,6 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-        <ColorModeScript initialColorMode="light" />
         {import.meta.env.DEV && (
           <script type="module" src="/src/__create/dev-error-overlay.js"></script>
         )}
@@ -474,12 +490,12 @@ export function Layout({ children }: { children: ReactNode }) {
         {LoadFontsSSR ? <LoadFontsSSR /> : null}
       </head>
       <body>
+        <ColorModeScript initialColorMode="light" />
         {children}
         <HotReloadIndicator />
         <Toaster position="bottom-right" />
         <ScrollRestoration />
         <Scripts />
-        <script src="https://kit.fontawesome.com/2c15cc0cc7.js" crossOrigin="anonymous" async />
       </body>
     </html>
   );
@@ -487,6 +503,13 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
   const [queryClient] = useState(() => new QueryClient());
+
+  if (typeof window !== 'undefined') {
+    console.log('[DEBUG] Rendering App on CLIENT');
+  } else {
+    console.log('[DEBUG] Rendering App on SERVER');
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>

@@ -48,6 +48,7 @@ const app = new Hono();
 app.use('*', requestId());
 
 app.use('*', (c, next) => {
+  console.log(`[REQUEST] ${c.req.method} ${c.req.path}`);
   const requestId = c.get('requestId');
   return als.run({ requestId }, () => next());
 });
@@ -55,6 +56,7 @@ app.use('*', (c, next) => {
 app.use(contextStorage());
 
 app.onError((err, c) => {
+  console.error('[SERVER ERROR]', err);
   const isApi = c.req.path.startsWith('/api/');
   if (isApi || c.req.method !== 'GET') {
     return c.json(
