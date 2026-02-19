@@ -4,30 +4,51 @@ import { useSession } from "@auth/create/react";
 
 const useUser = () => {
   const { data: session, status } = useSession();
-  const id = session?.user?.id
+  const [user, setUser] = React.useState(null);
+  const [loadingProfile, setLoadingProfile] = React.useState(true);
 
-  const [user, setUser] = React.useState(session?.user ?? null);
+  const fetchProfile = React.useCallback(async () => {
+    if (!session?.user?.email) return;
 
-  const fetchUser = React.useCallback(async (session) => {
-  return session?.user;
-}, [])
-
-  const refetchUser = React.useCallback(() => {
-    if(process.env.NEXT_PUBLIC_CREATE_ENV === "PRODUCTION") {
-      if (id) {
-        fetchUser(session).then(setUser);
+    try {
+      const res = await fetch("/api/profile");
+      if (res.ok) {
+        const data = await res.json();
+        // Merge session data with profile data (profile takes precedence for role)
+        setUser({ ...session.user, ...data.user });
       } else {
-        setUser(null);
+        // If profile fetch fails, fallback to session user but be aware it might lack role
+        console.warn("Failed to fetch profile");
+        setUser(session.user);
       }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+      setUser(session.user);
+    } finally {
+      setLoadingProfile(false);
     }
-  }, [fetchUser, id])
+  }, [session]);
 
-  React.useEffect(refetchUser, [refetchUser]);
+  React.useEffect(() => {
+    if (status === 'loading') return;
 
-  if (process.env.NEXT_PUBLIC_CREATE_ENV !== "PRODUCTION") {
-    return { user, data: session?.user || null, loading: status === 'loading', refetch: refetchUser };
-  }
-  return { user, data: user, loading: status === 'loading' || (status === 'authenticated' && !user), refetch: refetchUser };
+    if (status === 'unauthenticated') {
+      setUser(null);
+      setLoadingProfile(false);
+      return;
+    }
+
+    if (status === 'authenticated') {
+      fetchProfile();
+    }
+  }, [status, fetchProfile]);
+
+  return {
+    user,
+    data: user,
+    loading: status === 'loading' || loadingProfile,
+    refetch: fetchProfile
+  };
 };
 
 export { useUser }
